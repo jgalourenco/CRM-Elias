@@ -49,7 +49,7 @@ export default function Login() {
             <Sparkles className="h-6 w-6 text-[#C9A227]" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1C2B29]">
-            Clínica Seleta
+            Clínica EM
           </h1>
           <p className="text-sm text-[#667C78]">
             Medicina Integrativa • CRM & Régua de Atendimento
