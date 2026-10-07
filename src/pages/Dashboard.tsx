@@ -23,8 +23,12 @@ import {
   ChevronRight,
   Filter,
 } from 'lucide-react'
+import AgendaHojeView from '@/components/agendas/AgendaHojeView'
+import { StatusAtendimento } from '@/types/crm'
+import { useToast } from '@/hooks/use-toast'
 
 export default function Dashboard() {
+  const { toast } = useToast()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
 
@@ -33,27 +37,45 @@ export default function Dashboard() {
   const [atendimentos, setAtendimentos] = useState<Atendimento[]>([])
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [pacRes, prospRes, atRes, lancRes] = await Promise.all([
-          pacientesService.list(1, 100),
-          prospeccoesService.list(),
-          atendimentosService.list(),
-          lancamentosService.list(),
-        ])
-        setPacientes(pacRes.items)
-        setProspeccoes(prospRes)
-        setAtendimentos(atRes)
-        setLancamentos(lancRes)
-      } catch (err) {
-        console.error('Erro ao carregar métricas:', err)
-      } finally {
-        setLoading(false)
-      }
+  const loadData = async () => {
+    try {
+      const [pacRes, prospRes, atRes, lancRes] = await Promise.all([
+        pacientesService.list(1, 100),
+        prospeccoesService.list(),
+        atendimentosService.list('', 'data_hora'),
+        lancamentosService.list(),
+      ])
+      setPacientes(pacRes.items)
+      setProspeccoes(prospRes)
+      setAtendimentos(atRes)
+      setLancamentos(lancRes)
+    } catch (err) {
+      console.error('Erro ao carregar métricas:', err)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     loadData()
   }, [])
+
+  const handleMudarStatusHoje = async (atId: string, status: StatusAtendimento) => {
+    try {
+      await atendimentosService.update(atId, { status })
+      toast({
+        title: 'Status atualizado',
+        description: `Atendimento marcado como ${status}.`,
+      })
+      loadData()
+    } catch {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o atendimento.',
+        variant: 'destructive',
+      })
+    }
+  }
 
   // 1. Pacientes Ativos
   const pacientesAtivos = pacientes.filter(
@@ -162,9 +184,19 @@ export default function Dashboard() {
             className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
           >
             <Calendar className="h-3.5 w-3.5" />
-            Ver Agenda
+            Ver Agenda Completa
           </Button>
         </div>
+      </div>
+
+      {/* PAINEL HOJE EM PRIMEIRO PLANO */}
+      <div className="space-y-2">
+        <AgendaHojeView
+          atendimentos={atendimentos}
+          onNovoAtendimento={() => navigate('/agendas')}
+          onMudarStatus={handleMudarStatusHoje}
+          showNovoButton={true}
+        />
       </div>
 
       {/* 4 Cards Métricas */}

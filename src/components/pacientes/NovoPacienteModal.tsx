@@ -21,7 +21,7 @@ import {
 import { pacientesService, prospeccoesService, dispatchAutomacao } from '@/services/crm'
 import { Paciente, FasePaciente, Sexo } from '@/types/crm'
 import { useToast } from '@/hooks/use-toast'
-import { User, MapPin, FileText, Sparkles } from 'lucide-react'
+import { User, MapPin, FileText, Sparkles, CreditCard } from 'lucide-react'
 
 interface Props {
   open: boolean
@@ -46,6 +46,12 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
   const [email, setEmail] = useState(pacienteParaEditar?.email || '')
   const [fase, setFase] = useState<FasePaciente>(pacienteParaEditar?.fase || 'Prospeccao')
 
+  // Identificadores & Convênio
+  const [idCliente, setIdCliente] = useState(pacienteParaEditar?.id_cliente || '')
+  const [idAssinatura, setIdAssinatura] = useState(pacienteParaEditar?.id_assinatura || '')
+  const [idConvenio, setIdConvenio] = useState(pacienteParaEditar?.id_convenio || '')
+  const [convenio, setConvenio] = useState(pacienteParaEditar?.convenio || '')
+
   // Endereço
   const [cep, setCep] = useState(pacienteParaEditar?.cep || '')
   const [logradouro, setLogradouro] = useState(pacienteParaEditar?.logradouro || '')
@@ -68,6 +74,10 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
       setTelefone(pacienteParaEditar.telefone || '')
       setEmail(pacienteParaEditar.email || '')
       setFase(pacienteParaEditar.fase || 'Prospeccao')
+      setIdCliente(pacienteParaEditar.id_cliente || '')
+      setIdAssinatura(pacienteParaEditar.id_assinatura || '')
+      setIdConvenio(pacienteParaEditar.id_convenio || '')
+      setConvenio(pacienteParaEditar.convenio || '')
       setCep(pacienteParaEditar.cep || '')
       setLogradouro(pacienteParaEditar.logradouro || '')
       setNumero(pacienteParaEditar.numero || '')
@@ -84,6 +94,10 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
       setTelefone('')
       setEmail('')
       setFase('Prospeccao')
+      setIdCliente('')
+      setIdAssinatura('')
+      setIdConvenio('')
+      setConvenio('')
       setCep('')
       setLogradouro('')
       setNumero('')
@@ -106,15 +120,6 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
       setActiveTab('dados')
       return
     }
-    if (!telefone.trim()) {
-      toast({
-        title: 'Campo obrigatório',
-        description: 'Por favor, informe o telefone (WhatsApp) do paciente.',
-        variant: 'destructive',
-      })
-      setActiveTab('dados')
-      return
-    }
 
     setIsSubmitting(true)
     try {
@@ -123,9 +128,13 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
         cpf: cpf.trim() || undefined,
         data_nascimento: dataNascimento ? new Date(dataNascimento).toISOString() : undefined,
         sexo,
-        telefone: telefone.trim(),
+        telefone: telefone.trim() || undefined,
         email: email.trim() || undefined,
         fase,
+        id_cliente: idCliente.trim() || undefined,
+        id_assinatura: idAssinatura.trim() || undefined,
+        id_convenio: idConvenio.trim() || undefined,
+        convenio: convenio.trim() || undefined,
         cep: cep.trim() || undefined,
         logradouro: logradouro.trim() || undefined,
         numero: numero.trim() || undefined,
@@ -239,11 +248,11 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
 
                 <div className="space-y-1.5">
                   <Label htmlFor="telefone" className="text-xs font-semibold text-[#1C2B29]">
-                    Telefone / WhatsApp <span className="text-red-500">*</span>
+                    Telefone / WhatsApp{' '}
+                    <span className="text-xs font-normal text-[#667C78]">(opcional)</span>
                   </Label>
                   <Input
                     id="telefone"
-                    required
                     placeholder="(11) 98765-4321"
                     value={telefone}
                     onChange={(e) => setTelefone(e.target.value)}
@@ -320,6 +329,70 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
                       <SelectItem value="Inativo">Inativo</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Subseção: Identificadores & Convênio */}
+                <div className="sm:col-span-2 pt-2 border-t border-[#E3E7E5] mt-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#166A5A] mb-3 flex items-center gap-1.5">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    Identificadores & Convênio
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="id_cliente" className="text-xs font-semibold text-[#1C2B29]">
+                        ID do Cliente
+                      </Label>
+                      <Input
+                        id="id_cliente"
+                        placeholder="Ex: CLI-1049"
+                        value={idCliente}
+                        onChange={(e) => setIdCliente(e.target.value)}
+                        className="rounded-xl border-[#E3E7E5] focus-visible:ring-[#166A5A]"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="id_assinatura"
+                        className="text-xs font-semibold text-[#1C2B29]"
+                      >
+                        ID da Assinatura
+                      </Label>
+                      <Input
+                        id="id_assinatura"
+                        placeholder="Ex: SUB-9821"
+                        value={idAssinatura}
+                        onChange={(e) => setIdAssinatura(e.target.value)}
+                        className="rounded-xl border-[#E3E7E5] focus-visible:ring-[#166A5A]"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="id_convenio" className="text-xs font-semibold text-[#1C2B29]">
+                        ID do Convênio
+                      </Label>
+                      <Input
+                        id="id_convenio"
+                        placeholder="Ex: CONV-042"
+                        value={idConvenio}
+                        onChange={(e) => setIdConvenio(e.target.value)}
+                        className="rounded-xl border-[#E3E7E5] focus-visible:ring-[#166A5A]"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="convenio" className="text-xs font-semibold text-[#1C2B29]">
+                        Convênio / Plano de Saúde
+                      </Label>
+                      <Input
+                        id="convenio"
+                        placeholder="Ex: Bradesco Saúde, Amil, SulAmérica..."
+                        value={convenio}
+                        onChange={(e) => setConvenio(e.target.value)}
+                        className="rounded-xl border-[#E3E7E5] focus-visible:ring-[#166A5A]"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </TabsContent>

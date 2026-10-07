@@ -30,9 +30,13 @@ interface ColunaDetectada {
 const CAMPOS_SISTEMA = [
   { valor: 'ignorar', label: '— Não mapear (Ignorar) —' },
   { valor: 'nome', label: 'Nome Completo (Obrigatório)' },
-  { valor: 'telefone', label: 'Telefone / WhatsApp (Obrigatório)' },
+  { valor: 'telefone', label: 'Telefone / WhatsApp (Opcional)' },
   { valor: 'email', label: 'E-mail' },
   { valor: 'cpf', label: 'CPF' },
+  { valor: 'id_cliente', label: 'ID do Cliente' },
+  { valor: 'id_assinatura', label: 'ID da Assinatura' },
+  { valor: 'id_convenio', label: 'ID do Convênio' },
+  { valor: 'convenio', label: 'Convênio / Plano de Saúde' },
   { valor: 'data_nascimento', label: 'Data de Nascimento' },
   { valor: 'logradouro', label: 'Endereço (Rua/Av)' },
   { valor: 'observacoes', label: 'Observações' },
@@ -83,7 +87,29 @@ export default function ImportacaoMedX() {
         const mapped: ColunaDetectada[] = headers.map((h, i) => {
           const lower = h.toLowerCase()
           let campo = 'ignorar'
-          if (lower.includes('nome')) campo = 'nome'
+          if (lower.includes('assinatura') || lower.includes('sub_id') || lower.includes('id_sub'))
+            campo = 'id_assinatura'
+          else if (
+            lower.includes('id_convenio') ||
+            lower.includes('idconvenio') ||
+            lower.includes('cod_convenio')
+          )
+            campo = 'id_convenio'
+          else if (
+            lower.includes('convenio') ||
+            lower.includes('plano') ||
+            lower.includes('seguradora')
+          )
+            campo = 'convenio'
+          else if (
+            lower.includes('id_cliente') ||
+            lower.includes('idcliente') ||
+            lower.includes('cod_cliente') ||
+            lower.includes('codigo_cliente') ||
+            lower.includes('id_paciente')
+          )
+            campo = 'id_cliente'
+          else if (lower.includes('nome')) campo = 'nome'
           else if (lower.includes('tel') || lower.includes('cel') || lower.includes('whats'))
             campo = 'telefone'
           else if (lower.includes('mail')) campo = 'email'
@@ -109,12 +135,11 @@ export default function ImportacaoMedX() {
   // Validar dados
   const handleValidar = () => {
     const nomeCol = colunas.find((c) => c.campoMapeado === 'nome')
-    const telCol = colunas.find((c) => c.campoMapeado === 'telefone')
 
-    if (!nomeCol || !telCol) {
+    if (!nomeCol) {
       toast({
         title: 'Mapeamento incompleto',
-        description: 'É obrigatório mapear as colunas Nome e Telefone.',
+        description: 'É obrigatório mapear a coluna Nome.',
         variant: 'destructive',
       })
       return
@@ -126,14 +151,10 @@ export default function ImportacaoMedX() {
 
     linhasArquivo.forEach((row, idx) => {
       const nomeVal = row[nomeCol.indice]?.trim()
-      const telVal = row[telCol.indice]?.trim()
 
       if (!nomeVal) {
         invalidos++
         erros.push({ linha: idx + 2, nome: 'Não informado', erro: 'Nome obrigatório ausente' })
-      } else if (!telVal) {
-        invalidos++
-        erros.push({ linha: idx + 2, nome: nomeVal, erro: 'Telefone obrigatório ausente' })
       } else {
         validos++
       }
@@ -156,23 +177,33 @@ export default function ImportacaoMedX() {
 
     setImportando(true)
     const nomeCol = colunas.find((c) => c.campoMapeado === 'nome')!
-    const telCol = colunas.find((c) => c.campoMapeado === 'telefone')!
+    const telCol = colunas.find((c) => c.campoMapeado === 'telefone')
     const emailCol = colunas.find((c) => c.campoMapeado === 'email')
     const cpfCol = colunas.find((c) => c.campoMapeado === 'cpf')
+    const idClienteCol = colunas.find((c) => c.campoMapeado === 'id_cliente')
+    const idAssinaturaCol = colunas.find((c) => c.campoMapeado === 'id_assinatura')
+    const idConvenioCol = colunas.find((c) => c.campoMapeado === 'id_convenio')
+    const convenioCol = colunas.find((c) => c.campoMapeado === 'convenio')
     const obsCol = colunas.find((c) => c.campoMapeado === 'observacoes')
 
     let importados = 0
     for (const row of linhasArquivo) {
       const nomeVal = row[nomeCol.indice]?.trim()
-      const telVal = row[telCol.indice]?.trim()
+      const telVal = telCol ? row[telCol.indice]?.trim() : ''
 
-      if (nomeVal && telVal) {
+      if (nomeVal) {
         try {
           await pacientesService.create({
             nome: nomeVal,
-            telefone: telVal,
-            email: emailCol ? row[emailCol.indice]?.trim() : undefined,
-            cpf: cpfCol ? row[cpfCol.indice]?.trim() : undefined,
+            telefone: telVal || undefined,
+            email: emailCol ? row[emailCol.indice]?.trim() || undefined : undefined,
+            cpf: cpfCol ? row[cpfCol.indice]?.trim() || undefined : undefined,
+            id_cliente: idClienteCol ? row[idClienteCol.indice]?.trim() || undefined : undefined,
+            id_assinatura: idAssinaturaCol
+              ? row[idAssinaturaCol.indice]?.trim() || undefined
+              : undefined,
+            id_convenio: idConvenioCol ? row[idConvenioCol.indice]?.trim() || undefined : undefined,
+            convenio: convenioCol ? row[convenioCol.indice]?.trim() || undefined : undefined,
             observacoes: obsCol
               ? `[Importado MedX] ${row[obsCol.indice] || ''}`
               : '[Importado MedX]',
@@ -256,7 +287,8 @@ export default function ImportacaoMedX() {
           <div className="p-3 bg-[#F7F6F3] rounded-xl space-y-1 border border-[#E3E7E5]">
             <span className="font-bold text-[#166A5A]">3. Mapear & Validar</span>
             <p className="text-[#667C78]">
-              Confira os campos. Nome e Telefone são obrigatórios. Clique em "Validar dados".
+              Confira os campos. Nome é obrigatório; telefone, convênio e IDs são opcionais. Clique
+              em "Validar dados".
             </p>
           </div>
           <div className="p-3 bg-[#F7F6F3] rounded-xl space-y-1 border border-[#E3E7E5]">
@@ -383,7 +415,7 @@ export default function ImportacaoMedX() {
                 {registrosInvalidos > 0 && (
                   <span className="flex items-center gap-1 text-[#C0392B] font-semibold">
                     <AlertTriangle className="h-4 w-4" />
-                    {registrosInvalidos} com erros (nome ou telefone ausentes)
+                    {registrosInvalidos} com erros (nome ausente)
                   </span>
                 )}
               </div>

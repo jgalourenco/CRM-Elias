@@ -518,7 +518,7 @@ export default function FichaPaciente() {
               <div className="flex items-center gap-4 text-xs text-[#667C78] flex-wrap">
                 <span className="flex items-center gap-1">
                   <Phone className="h-3.5 w-3.5" />
-                  {paciente.telefone}
+                  {paciente.telefone || <span className="italic text-[#9AA8A5]">Sem telefone</span>}
                 </span>
                 {paciente.email && (
                   <span className="flex items-center gap-1">
@@ -527,6 +527,15 @@ export default function FichaPaciente() {
                   </span>
                 )}
                 {paciente.cpf && <span>CPF: {paciente.cpf}</span>}
+                {paciente.convenio && (
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] font-semibold text-[#166A5A] border-[#166A5A]/30 bg-[#E2F0EB]/50"
+                  >
+                    Convênio: {paciente.convenio}
+                    {paciente.id_convenio ? ` (#${paciente.id_convenio})` : ''}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -709,6 +718,66 @@ export default function FichaPaciente() {
 
             {/* Coluna Direita: Cards Próximo Atendimento & LTV */}
             <div className="space-y-6">
+              {/* Card Dados Cadastrais & Convênio */}
+              <Card className="rounded-2xl border-[#E3E7E5] bg-white shadow-xs">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-bold text-[#1C2B29]">
+                      Dados Cadastrais & Convênio
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setModalEditarPaciente(true)}
+                      className="text-[#166A5A] hover:bg-[#E2F0EB] text-xs h-7 px-2"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Editar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2.5 text-xs">
+                  <div className="flex justify-between py-1 border-b border-[#E3E7E5]/60">
+                    <span className="text-[#667C78]">ID do Cliente:</span>
+                    <span className="font-semibold text-[#1C2B29] font-mono">
+                      {paciente.id_cliente || '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-[#E3E7E5]/60">
+                    <span className="text-[#667C78]">ID da Assinatura:</span>
+                    <span className="font-semibold text-[#1C2B29] font-mono">
+                      {paciente.id_assinatura || '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-[#E3E7E5]/60">
+                    <span className="text-[#667C78]">Convênio:</span>
+                    <span className="font-semibold text-[#166A5A]">
+                      {paciente.convenio || 'Particular'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-[#E3E7E5]/60">
+                    <span className="text-[#667C78]">ID do Convênio:</span>
+                    <span className="font-semibold text-[#1C2B29] font-mono">
+                      {paciente.id_convenio || '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-[#E3E7E5]/60">
+                    <span className="text-[#667C78]">Telefone:</span>
+                    <span className="font-semibold text-[#1C2B29]">
+                      {paciente.telefone || (
+                        <span className="italic text-[#9AA8A5]">Não informado</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-[#667C78]">Cidade / UF:</span>
+                    <span className="font-semibold text-[#1C2B29]">
+                      {paciente.cidade ? `${paciente.cidade}/${paciente.uf || 'SP'}` : '—'}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Card Próximo Atendimento */}
               <Card className="rounded-2xl border-[#E3E7E5] bg-white shadow-xs">
                 <CardHeader className="pb-3">

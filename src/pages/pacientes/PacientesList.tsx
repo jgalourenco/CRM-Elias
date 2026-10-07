@@ -94,7 +94,11 @@ export default function Pacientes() {
       p.nome.toLowerCase().includes(search.toLowerCase()) ||
       (p.telefone && p.telefone.includes(search)) ||
       (p.email && p.email.toLowerCase().includes(search.toLowerCase())) ||
-      (p.cpf && p.cpf.includes(search))
+      (p.cpf && p.cpf.includes(search)) ||
+      (p.id_cliente && p.id_cliente.toLowerCase().includes(search.toLowerCase())) ||
+      (p.id_assinatura && p.id_assinatura.toLowerCase().includes(search.toLowerCase())) ||
+      (p.id_convenio && p.id_convenio.toLowerCase().includes(search.toLowerCase())) ||
+      (p.convenio && p.convenio.toLowerCase().includes(search.toLowerCase()))
 
     const matchFase = faseFilter === 'todos' || p.fase === faseFilter
 
@@ -192,7 +196,7 @@ export default function Pacientes() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667C78]" />
             <Input
               type="text"
-              placeholder="Buscar por nome, telefone, e-mail ou CPF..."
+              placeholder="Buscar por nome, telefone, CPF, convênio, ID cliente..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -256,6 +260,7 @@ export default function Pacientes() {
             <thead>
               <tr className="border-b border-[#E3E7E5] bg-[#F7F6F3]/60 text-xs font-semibold text-[#667C78]">
                 <th className="py-3.5 px-4 sm:px-6">Paciente</th>
+                <th className="py-3.5 px-4">Convênio / IDs</th>
                 <th className="py-3.5 px-4">Fase</th>
                 <th className="py-3.5 px-4">Próximo Atendimento</th>
                 <th className="py-3.5 px-4">Pacote Atual</th>
@@ -266,7 +271,7 @@ export default function Pacientes() {
             <tbody className="divide-y divide-[#E3E7E5]/70">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-xs text-[#667C78]">
+                  <td colSpan={7} className="py-12 text-center text-xs text-[#667C78]">
                     <div className="flex flex-col items-center gap-2">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#166A5A] border-t-transparent" />
                       Carregando pacientes...
@@ -275,7 +280,7 @@ export default function Pacientes() {
                 </tr>
               ) : paginatedPacientes.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-xs text-[#667C78]">
+                  <td colSpan={7} className="py-12 text-center text-xs text-[#667C78]">
                     Nenhum paciente encontrado com os filtros selecionados.
                   </td>
                 </tr>
@@ -318,9 +323,37 @@ export default function Pacientes() {
                             </p>
                             <p className="text-xs text-[#667C78] flex items-center gap-1">
                               <Phone className="h-3 w-3" />
-                              {pac.telefone}
+                              {pac.telefone ? (
+                                pac.telefone
+                              ) : (
+                                <span className="italic text-[#9AA8A5]">Sem telefone</span>
+                              )}
                             </p>
                           </div>
+                        </div>
+                      </td>
+
+                      {/* Convênio / IDs */}
+                      <td className="py-3.5 px-4 text-xs">
+                        <div className="space-y-0.5">
+                          {pac.convenio ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[11px] font-semibold text-[#166A5A] border-[#166A5A]/30 bg-[#E2F0EB]/40"
+                            >
+                              {pac.convenio}
+                              {pac.id_convenio ? ` (${pac.id_convenio})` : ''}
+                            </Badge>
+                          ) : (
+                            <span className="text-[#667C78] italic text-xs">Particular</span>
+                          )}
+                          {(pac.id_cliente || pac.id_assinatura) && (
+                            <p className="text-[10px] text-[#667C78] font-mono">
+                              {pac.id_cliente && `Cli: ${pac.id_cliente}`}
+                              {pac.id_cliente && pac.id_assinatura && ' • '}
+                              {pac.id_assinatura && `Ass: ${pac.id_assinatura}`}
+                            </p>
+                          )}
                         </div>
                       </td>
 

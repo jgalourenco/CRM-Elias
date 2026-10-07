@@ -32,7 +32,9 @@ import {
   Sparkles,
   CheckCircle2,
   AlertCircle,
+  ListOrdered,
 } from 'lucide-react'
+import AgendaHojeView, { isSameDay } from '@/components/agendas/AgendaHojeView'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Agendas() {
@@ -43,8 +45,8 @@ export default function Agendas() {
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Calendar View State: 'month' | 'week'
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
+  // Calendar View State: 'month' | 'week' | 'today'
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'today'>('today')
   const [currentDate, setCurrentDate] = useState(new Date())
 
   // Modal Novo Atendimento
@@ -132,6 +134,24 @@ export default function Agendas() {
     .sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime())
 
   // Handle Save
+  // Handle status update
+  const handleMudarStatus = async (atId: string, novoStatus: StatusAtendimento) => {
+    try {
+      await atendimentosService.update(atId, { status: novoStatus })
+      toast({
+        title: 'Status atualizado',
+        description: `Atendimento marcado como ${novoStatus}.`,
+      })
+      fetchData()
+    } catch {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o status.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const handleCriarAtendimento = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedPacienteId || !dataHora) {
@@ -230,6 +250,14 @@ export default function Agendas() {
           {/* Alternância Mensal / Semanal */}
           <div className="bg-white border border-[#E3E7E5] p-1 rounded-xl flex items-center text-xs font-semibold">
             <button
+              onClick={() => setViewMode('today')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                viewMode === 'today' ? 'bg-[#166A5A] text-white' : 'text-[#667C78]'
+              }`}
+            >
+              Hoje
+            </button>
+            <button
               onClick={() => setViewMode('month')}
               className={`px-3 py-1.5 rounded-lg transition-colors ${
                 viewMode === 'month' ? 'bg-[#166A5A] text-white' : 'text-[#667C78]'
@@ -248,7 +276,11 @@ export default function Agendas() {
           </div>
 
           <Button
-            onClick={() => setModalNovo(true)}
+            onClick={() => {
+              const nowIso = new Date().toISOString().slice(0, 16)
+              setDataHora(nowIso)
+              setModalNovo(true)
+            }}
             className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
           >
             <Plus className="h-4 w-4" />
@@ -257,205 +289,285 @@ export default function Agendas() {
         </div>
       </div>
 
-      {/* Main Grid: Calendário (8 cols) + Próximos 7 Dias (4 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Calendário Principal (8 colunas) */}
-        <Card className="lg:col-span-8 rounded-2xl border-[#E3E7E5] bg-white shadow-xs p-6 space-y-4">
-          {/* Navegação de Mês */}
-          <div className="flex items-center justify-between pb-2 border-b border-[#E3E7E5]">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-[#1C2B29]">
-                {monthNames[month]} {year}
-              </h2>
+      {/* VISÃO HOJE (quando selecionada no toggle) */}
+      {viewMode === 'today' && (
+        <div className="space-y-6">
+          <AgendaHojeView
+            atendimentos={atendimentos}
+            onNovoAtendimento={() => {
+              const nowIso = new Date().toISOString().slice(0, 16)
+              setDataHora(nowIso)
+              setModalNovo(true)
+            }}
+            onMudarStatus={handleMudarStatus}
+          />
+
+          {/* Card com os próximos dias logo abaixo para visão contínua */}
+          <Card className="rounded-2xl border-[#E3E7E5] bg-white shadow-xs p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold text-[#1C2B29]">
+                  Nos Próximos 7 Dias
+                </CardTitle>
+                <CardDescription className="text-xs text-[#667C78]">
+                  Sequência dos agendamentos previstos para o restante da semana
+                </CardDescription>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleToday}
-                className="rounded-lg text-xs h-7 px-2.5 font-medium border-[#E3E7E5]"
+                onClick={() => setViewMode('month')}
+                className="rounded-xl text-xs"
               >
-                Hoje
+                Abrir Calendário Mensal
               </Button>
             </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handlePrev}
-                className="h-8 w-8 rounded-lg border-[#E3E7E5]"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleNext}
-                className="h-8 w-8 rounded-lg border-[#E3E7E5]"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
 
-          {/* Grade Mensal */}
-          {viewMode === 'month' ? (
-            <div className="space-y-1">
-              {/* Cabeçalho dias da semana */}
-              <div className="grid grid-cols-7 text-center text-xs font-semibold text-[#667C78] py-2">
-                <span>Dom</span>
-                <span>Seg</span>
-                <span>Ter</span>
-                <span>Qua</span>
-                <span>Qui</span>
-                <span>Sex</span>
-                <span>Sáb</span>
-              </div>
-
-              {/* Grade de dias */}
-              <div className="grid grid-cols-7 gap-1.5">
-                {daysArray.map((day, idx) => {
-                  if (day === null) {
-                    return <div key={`empty-${idx}`} className="h-24 bg-gray-50/40 rounded-xl" />
-                  }
-
-                  const dayAtendimentos = getAtendimentosForDay(day)
-                  const isToday =
-                    now.getDate() === day && now.getMonth() === month && now.getFullYear() === year
-
-                  return (
-                    <div
-                      key={`day-${day}`}
-                      onClick={() => {
-                        const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T10:00`
-                        setDataHora(dStr)
-                        setModalNovo(true)
-                      }}
-                      className={`h-24 p-1.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between hover:border-[#166A5A] hover:bg-[#E2F0EB]/20 ${
-                        isToday
-                          ? 'bg-[#E2F0EB]/30 border-[#166A5A] shadow-xs'
-                          : 'border-[#E3E7E5]/70 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`text-xs font-bold ${
-                            isToday
-                              ? 'h-5 w-5 rounded-full bg-[#166A5A] text-white flex items-center justify-center'
-                              : 'text-[#1C2B29]'
-                          }`}
-                        >
-                          {day}
-                        </span>
-                        {dayAtendimentos.length > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 bg-[#FBF3D9] text-[#A5831D] rounded-full">
-                            {dayAtendimentos.length}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="space-y-1 overflow-hidden">
-                        {dayAtendimentos.slice(0, 2).map((a) => (
-                          <div
-                            key={a.id}
-                            className="truncate text-[10px] px-1 py-0.5 rounded bg-white border border-[#E3E7E5] text-[#1C2B29] font-medium"
-                            title={`${a.expand?.paciente_id?.nome}: ${a.tipo}`}
-                          >
-                            {a.tipo.includes('APP') ? '💉' : '🩺'}{' '}
-                            {a.expand?.paciente_id?.nome?.split(' ')[0]}
-                          </div>
-                        ))}
-                        {dayAtendimentos.length > 2 && (
-                          <span className="text-[9px] text-[#667C78] block font-medium">
-                            +{dayAtendimentos.length - 2} mais
-                          </span>
-                        )}
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {proximos7Dias
+                .filter((a) => !isSameDay(new Date(a.data_hora), new Date()))
+                .slice(0, 6)
+                .map((at) => (
+                  <div
+                    key={at.id}
+                    onClick={() => at.paciente_id && navigate(`/pacientes/${at.paciente_id}`)}
+                    className="p-3.5 rounded-xl border border-[#E3E7E5] bg-[#F7F6F3]/50 hover:bg-[#E2F0EB]/40 cursor-pointer transition-colors space-y-1.5 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#166A5A] group-hover:underline">
+                        {at.tipo.replace('_', ' ')}
+                      </span>
+                      <Badge className="text-[10px] bg-white border border-[#E3E7E5] text-[#1C2B29]">
+                        {new Date(at.data_hora).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                        })}
+                      </Badge>
                     </div>
-                  )
-                })}
-              </div>
-            </div>
-          ) : (
-            // Visualização Semanal Resumida
-            <div className="space-y-3 py-2">
-              <div className="p-4 bg-gray-50 rounded-xl text-center text-xs text-[#667C78]">
-                Visualização semanal detalhada de horários e salas
-              </div>
-              <div className="divide-y divide-[#E3E7E5]">
-                {proximos7Dias.map((at) => (
-                  <div key={at.id} className="py-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-[#1C2B29]">
-                        {at.expand?.paciente_id?.nome || 'Paciente'}
-                      </p>
-                      <p className="text-xs text-[#667C78]">
-                        {at.tipo.replace('_', ' ')} • {at.profissional}
-                      </p>
+
+                    <p className="text-sm font-semibold text-[#1C2B29] truncate">
+                      {at.expand?.paciente_id?.nome || 'Paciente'}
+                    </p>
+
+                    <div className="flex items-center justify-between text-xs text-[#667C78]">
+                      <span>{at.profissional || 'Equipe Médica'}</span>
+                      <span className="font-medium text-[#1C2B29]">
+                        {new Date(at.data_hora).toLocaleTimeString('pt-BR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
                     </div>
-                    <Badge variant="outline">
-                      {new Date(at.data_hora).toLocaleString('pt-BR', {
-                        dateStyle: 'short',
-                        timeStyle: 'short',
-                      })}
-                    </Badge>
                   </div>
                 ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Main Grid: Calendário (8 cols) + Próximos 7 Dias (4 cols) quando viewMode for month ou week */}
+      {viewMode !== 'today' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Calendário Principal (8 colunas) */}
+          <Card className="lg:col-span-8 rounded-2xl border-[#E3E7E5] bg-white shadow-xs p-6 space-y-4">
+            {/* Navegação de Mês */}
+            <div className="flex items-center justify-between pb-2 border-b border-[#E3E7E5]">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[#1C2B29]">
+                  {monthNames[month]} {year}
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToday}
+                  className="rounded-lg text-xs h-7 px-2.5 font-medium border-[#E3E7E5]"
+                >
+                  Hoje
+                </Button>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handlePrev}
+                  className="h-8 w-8 rounded-lg border-[#E3E7E5]"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleNext}
+                  className="h-8 w-8 rounded-lg border-[#E3E7E5]"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          )}
-        </Card>
 
-        {/* Lateral: Próximos 7 Dias (4 colunas) */}
-        <Card className="lg:col-span-4 rounded-2xl border-[#E3E7E5] bg-white shadow-xs p-6 space-y-4">
-          <div>
-            <CardTitle className="text-base font-bold text-[#1C2B29]">Próximos 7 Dias</CardTitle>
-            <CardDescription className="text-xs text-[#667C78]">
-              Agendamentos imediatos no radar da clínica
-            </CardDescription>
-          </div>
+            {/* Grade Mensal */}
+            {viewMode === 'month' ? (
+              <div className="space-y-1">
+                {/* Cabeçalho dias da semana */}
+                <div className="grid grid-cols-7 text-center text-xs font-semibold text-[#667C78] py-2">
+                  <span>Dom</span>
+                  <span>Seg</span>
+                  <span>Ter</span>
+                  <span>Qua</span>
+                  <span>Qui</span>
+                  <span>Sex</span>
+                  <span>Sáb</span>
+                </div>
 
-          <div className="space-y-3 max-h-[500px] overflow-y-auto">
-            {proximos7Dias.length === 0 ? (
-              <div className="py-12 text-center text-xs text-[#667C78]">
-                Nenhum atendimento agendado para os próximos 7 dias.
+                {/* Grade de dias */}
+                <div className="grid grid-cols-7 gap-1.5">
+                  {daysArray.map((day, idx) => {
+                    if (day === null) {
+                      return <div key={`empty-${idx}`} className="h-24 bg-gray-50/40 rounded-xl" />
+                    }
+
+                    const dayAtendimentos = getAtendimentosForDay(day)
+                    const isToday =
+                      now.getDate() === day &&
+                      now.getMonth() === month &&
+                      now.getFullYear() === year
+
+                    return (
+                      <div
+                        key={`day-${day}`}
+                        onClick={() => {
+                          const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T10:00`
+                          setDataHora(dStr)
+                          setModalNovo(true)
+                        }}
+                        className={`h-24 p-1.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between hover:border-[#166A5A] hover:bg-[#E2F0EB]/20 ${
+                          isToday
+                            ? 'bg-[#E2F0EB]/30 border-[#166A5A] shadow-xs'
+                            : 'border-[#E3E7E5]/70 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`text-xs font-bold ${
+                              isToday
+                                ? 'h-5 w-5 rounded-full bg-[#166A5A] text-white flex items-center justify-center'
+                                : 'text-[#1C2B29]'
+                            }`}
+                          >
+                            {day}
+                          </span>
+                          {dayAtendimentos.length > 0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 bg-[#FBF3D9] text-[#A5831D] rounded-full">
+                              {dayAtendimentos.length}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-1 overflow-hidden">
+                          {dayAtendimentos.slice(0, 2).map((a) => (
+                            <div
+                              key={a.id}
+                              className="truncate text-[10px] px-1 py-0.5 rounded bg-white border border-[#E3E7E5] text-[#1C2B29] font-medium"
+                              title={`${a.expand?.paciente_id?.nome}: ${a.tipo}`}
+                            >
+                              {a.tipo.includes('APP') ? '💉' : '🩺'}{' '}
+                              {a.expand?.paciente_id?.nome?.split(' ')[0]}
+                            </div>
+                          ))}
+                          {dayAtendimentos.length > 2 && (
+                            <span className="text-[9px] text-[#667C78] block font-medium">
+                              +{dayAtendimentos.length - 2} mais
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             ) : (
-              proximos7Dias.map((at) => (
-                <div
-                  key={at.id}
-                  onClick={() => navigate(`/pacientes/${at.paciente_id}`)}
-                  className="p-3.5 rounded-xl border border-[#E3E7E5] bg-[#F7F6F3]/50 hover:bg-[#E2F0EB]/40 cursor-pointer transition-colors space-y-1.5 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#166A5A] group-hover:underline">
-                      {at.tipo.replace('_', ' ')}
-                    </span>
-                    <Badge className="text-[10px] bg-white border border-[#E3E7E5] text-[#1C2B29]">
-                      {new Date(at.data_hora).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                      })}
-                    </Badge>
-                  </div>
-
-                  <p className="text-sm font-semibold text-[#1C2B29]">
-                    {at.expand?.paciente_id?.nome || 'Paciente'}
-                  </p>
-
-                  <div className="flex items-center justify-between text-xs text-[#667C78]">
-                    <span>{at.profissional || 'Equipe Médica'}</span>
-                    <span className="font-medium text-[#1C2B29]">
-                      {new Date(at.data_hora).toLocaleTimeString('pt-BR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
+              // Visualização Semanal Resumida
+              <div className="space-y-3 py-2">
+                <div className="p-4 bg-gray-50 rounded-xl text-center text-xs text-[#667C78]">
+                  Visualização semanal detalhada de horários e salas
                 </div>
-              ))
+                <div className="divide-y divide-[#E3E7E5]">
+                  {proximos7Dias.map((at) => (
+                    <div key={at.id} className="py-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-[#1C2B29]">
+                          {at.expand?.paciente_id?.nome || 'Paciente'}
+                        </p>
+                        <p className="text-xs text-[#667C78]">
+                          {at.tipo.replace('_', ' ')} • {at.profissional}
+                        </p>
+                      </div>
+                      <Badge variant="outline">
+                        {new Date(at.data_hora).toLocaleString('pt-BR', {
+                          dateStyle: 'short',
+                          timeStyle: 'short',
+                        })}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
-        </Card>
-      </div>
+          </Card>
+
+          {/* Lateral: Próximos 7 Dias (4 colunas) */}
+          <Card className="lg:col-span-4 rounded-2xl border-[#E3E7E5] bg-white shadow-xs p-6 space-y-4">
+            <div>
+              <CardTitle className="text-base font-bold text-[#1C2B29]">Próximos 7 Dias</CardTitle>
+              <CardDescription className="text-xs text-[#667C78]">
+                Agendamentos imediatos no radar da clínica
+              </CardDescription>
+            </div>
+
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {proximos7Dias.length === 0 ? (
+                <div className="py-12 text-center text-xs text-[#667C78]">
+                  Nenhum atendimento agendado para os próximos 7 dias.
+                </div>
+              ) : (
+                proximos7Dias.map((at) => (
+                  <div
+                    key={at.id}
+                    onClick={() => navigate(`/pacientes/${at.paciente_id}`)}
+                    className="p-3.5 rounded-xl border border-[#E3E7E5] bg-[#F7F6F3]/50 hover:bg-[#E2F0EB]/40 cursor-pointer transition-colors space-y-1.5 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#166A5A] group-hover:underline">
+                        {at.tipo.replace('_', ' ')}
+                      </span>
+                      <Badge className="text-[10px] bg-white border border-[#E3E7E5] text-[#1C2B29]">
+                        {new Date(at.data_hora).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                        })}
+                      </Badge>
+                    </div>
+
+                    <p className="text-sm font-semibold text-[#1C2B29]">
+                      {at.expand?.paciente_id?.nome || 'Paciente'}
+                    </p>
+
+                    <div className="flex items-center justify-between text-xs text-[#667C78]">
+                      <span>{at.profissional || 'Equipe Médica'}</span>
+                      <span className="font-medium text-[#1C2B29]">
+                        {new Date(at.data_hora).toLocaleTimeString('pt-BR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Modal Novo Atendimento */}
       <Dialog open={modalNovo} onOpenChange={setModalNovo}>

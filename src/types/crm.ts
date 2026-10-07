@@ -71,7 +71,7 @@ export interface Paciente {
   cpf?: string
   data_nascimento?: string
   sexo?: Sexo
-  telefone: string
+  telefone?: string
   email?: string
   cep?: string
   logradouro?: string
@@ -86,6 +86,10 @@ export interface Paciente {
   pacote_atual_id?: string
   aplicacoes_restantes?: number
   ltv?: number
+  id_cliente?: string
+  id_assinatura?: string
+  id_convenio?: string
+  convenio?: string
   created: string
   updated: string
   expand?: {
