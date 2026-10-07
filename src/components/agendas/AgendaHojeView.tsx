@@ -8,22 +8,26 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   Calendar as CalendarIcon,
   Clock,
-  User,
   CheckCircle2,
   AlertCircle,
   Plus,
-  ArrowRight,
-  Sparkles,
   Phone,
   Eye,
   Check,
   XCircle,
+  Play,
+  UserCheck,
+  Stethoscope,
+  Activity,
+  FileText,
+  DollarSign,
 } from 'lucide-react'
 
 interface AgendaHojeProps {
   atendimentos: Atendimento[]
   onNovoAtendimento?: () => void
   onMudarStatus?: (id: string, status: StatusAtendimento) => void
+  onIniciarConsulta?: (atendimento: Atendimento) => void
   showNovoButton?: boolean
   className?: string
   compact?: boolean
@@ -45,7 +49,7 @@ export function formatHora(iso: string) {
 export function getTipoLabel(tipo: TipoAtendimento) {
   switch (tipo) {
     case 'Consulta':
-      return 'Consulta'
+      return 'Consulta Integrativa'
     case 'Retorno':
       return 'Retorno'
     case 'Aplicacao_APP':
@@ -68,45 +72,113 @@ export function getTipoIcon(tipo: TipoAtendimento) {
   return '🩺'
 }
 
-export function getStatusBadge(status: StatusAtendimento) {
+/**
+ * Cores de status no padrão MedX + identidade Clínica Seleta
+ * Cada status ganha cor de borda lateral direita (border-r-8) e badge textual
+ */
+export interface StatusConfig {
+  label: string
+  color: string // CSS border color
+  badgeBg: string
+  badgeText: string
+  badgeBorder: string
+  icon: React.ReactNode
+}
+
+export function getStatusConfig(status: StatusAtendimento): StatusConfig {
   switch (status) {
-    case 'Realizado':
-      return (
-        <Badge className="bg-emerald-50 text-[#2E8B57] border border-emerald-200 text-[11px] font-semibold hover:bg-emerald-50">
-          <CheckCircle2 className="h-3 w-3 mr-1" />
-          Realizado
-        </Badge>
-      )
     case 'Agendado':
-      return (
-        <Badge className="bg-blue-50 text-[#2E7FA3] border border-blue-200 text-[11px] font-semibold hover:bg-blue-50">
-          <Clock className="h-3 w-3 mr-1" />
-          Agendado
-        </Badge>
-      )
+      return {
+        label: 'Agendado',
+        color: '#2E7FA3', // Azul Seleta
+        badgeBg: 'bg-sky-50',
+        badgeText: 'text-[#2E7FA3]',
+        badgeBorder: 'border-sky-200',
+        icon: <Clock className="h-3 w-3 mr-1" />,
+      }
+    case 'Confirmado':
+      return {
+        label: 'Confirmado',
+        color: '#C9A227', // Dourado Seleta
+        badgeBg: 'bg-amber-50',
+        badgeText: 'text-[#A5831D]',
+        badgeBorder: 'border-amber-200',
+        icon: <UserCheck className="h-3 w-3 mr-1" />,
+      }
+    case 'Chegou':
+      return {
+        label: 'Chegou na Clínica',
+        color: '#0D9488', // Teal vibrante
+        badgeBg: 'bg-teal-50',
+        badgeText: 'text-teal-700',
+        badgeBorder: 'border-teal-200',
+        icon: <Activity className="h-3 w-3 mr-1" />,
+      }
+    case 'Em_atendimento':
+      return {
+        label: 'Em Atendimento',
+        color: '#166A5A', // Verde Seleta principal
+        badgeBg: 'bg-emerald-100',
+        badgeText: 'text-[#166A5A]',
+        badgeBorder: 'border-[#166A5A]/40',
+        icon: <Stethoscope className="h-3 w-3 mr-1 animate-pulse" />,
+      }
+    case 'Realizado':
+      return {
+        label: 'Atendido',
+        color: '#94A3B8', // Slate / esmaecido
+        badgeBg: 'bg-slate-100',
+        badgeText: 'text-slate-600',
+        badgeBorder: 'border-slate-300',
+        icon: <CheckCircle2 className="h-3 w-3 mr-1" />,
+      }
     case 'No_show':
-      return (
-        <Badge className="bg-red-50 text-[#C0392B] border border-red-200 text-[11px] font-semibold hover:bg-red-50">
-          <AlertCircle className="h-3 w-3 mr-1" />
-          No-show
-        </Badge>
-      )
+      return {
+        label: 'Não Compareceu (No-show)',
+        color: '#E11D48', // Vermelho
+        badgeBg: 'bg-rose-50',
+        badgeText: 'text-rose-700',
+        badgeBorder: 'border-rose-200',
+        icon: <AlertCircle className="h-3 w-3 mr-1" />,
+      }
     case 'Cancelado':
-      return (
-        <Badge className="bg-gray-100 text-[#667C78] border border-gray-200 text-[11px] font-semibold hover:bg-gray-100">
-          <XCircle className="h-3 w-3 mr-1" />
-          Cancelado
-        </Badge>
-      )
+      return {
+        label: 'Cancelado',
+        color: '#CBD5E1', // Cinza claro
+        badgeBg: 'bg-gray-100',
+        badgeText: 'text-gray-500',
+        badgeBorder: 'border-gray-200',
+        icon: <XCircle className="h-3 w-3 mr-1" />,
+      }
     default:
-      return <Badge variant="outline">{status}</Badge>
+      return {
+        label: status,
+        color: '#667C78',
+        badgeBg: 'bg-gray-50',
+        badgeText: 'text-gray-700',
+        badgeBorder: 'border-gray-200',
+        icon: <Clock className="h-3 w-3 mr-1" />,
+      }
   }
+}
+
+export function getStatusBadge(status: StatusAtendimento) {
+  const cfg = getStatusConfig(status)
+  return (
+    <Badge
+      className={`${cfg.badgeBg} ${cfg.badgeText} border ${cfg.badgeBorder} text-[11px] font-semibold hover:${cfg.badgeBg} transition-colors`}
+    >
+      {cfg.icon}
+      {cfg.label}
+    </Badge>
+  )
 }
 
 export default function AgendaHojeView({
   atendimentos,
   onNovoAtendimento,
   onMudarStatus,
+  onIniciarConsulta,
   showNovoButton = true,
   className = '',
   compact = false,
@@ -119,10 +191,11 @@ export default function AgendaHojeView({
     .filter((a) => isSameDay(new Date(a.data_hora), now))
     .sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime())
 
-  // Separar em já realizados / passados vs a seguir
+  // Contadores
   const concluidosCount = hojeAtendimentos.filter((a) => a.status === 'Realizado').length
+  const emAndamentoCount = hojeAtendimentos.filter((a) => a.status === 'Em_atendimento').length
   const agendadosRestantesCount = hojeAtendimentos.filter(
-    (a) => a.status === 'Agendado' && new Date(a.data_hora) >= now,
+    (a) => a.status !== 'Realizado' && a.status !== 'Cancelado' && a.status !== 'No_show',
   ).length
 
   const dataHojeFormatada = now.toLocaleDateString('pt-BR', {
@@ -131,6 +204,20 @@ export default function AgendaHojeView({
     month: 'long',
     year: 'numeric',
   })
+
+  // Ação de Iniciar Consulta: marca Em_atendimento e navega para prontuário em modo atendimento
+  const handleIniciarConsulta = (at: Atendimento) => {
+    if (onIniciarConsulta) {
+      onIniciarConsulta(at)
+    } else {
+      if (onMudarStatus) {
+        onMudarStatus(at.id, 'Em_atendimento')
+      }
+      if (at.paciente_id) {
+        navigate(`/pacientes/${at.paciente_id}?modo=atendimento&atendimentoId=${at.id}`)
+      }
+    }
+  }
 
   return (
     <Card
@@ -143,7 +230,7 @@ export default function AgendaHojeView({
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-[#166A5A] animate-pulse" />
               <CardTitle className="text-lg font-bold text-[#1C2B29] flex items-center gap-2">
-                Agenda de Hoje
+                Atendimentos de Hoje
                 <Badge className="bg-[#166A5A] text-white hover:bg-[#166A5A] text-xs font-semibold px-2 py-0.5">
                   Hoje
                 </Badge>
@@ -159,12 +246,20 @@ export default function AgendaHojeView({
               <div className="flex items-center gap-2 text-xs text-[#667C78] bg-white px-3 py-1.5 rounded-xl border border-[#E3E7E5]">
                 <span className="font-semibold text-[#166A5A]">{hojeAtendimentos.length}</span>
                 <span>total</span>
+                {emAndamentoCount > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="font-bold text-amber-600 animate-pulse">
+                      {emAndamentoCount} em consulta
+                    </span>
+                  </>
+                )}
                 <span>•</span>
                 <span className="font-semibold text-[#2E8B57]">{concluidosCount}</span>
-                <span>concluídos</span>
+                <span>atendidos</span>
                 <span>•</span>
                 <span className="font-semibold text-[#2E7FA3]">{agendadosRestantesCount}</span>
-                <span>a seguir</span>
+                <span>pendentes</span>
               </div>
             )}
 
@@ -213,14 +308,20 @@ export default function AgendaHojeView({
             )}
           </div>
         ) : (
-          /* Lista Cronológica */
+          /* Lista Cronológica com Borda Lateral Direita Colorida MedX */
           <div className="divide-y divide-[#E3E7E5]/70">
-            {hojeAtendimentos.map((at, idx) => {
+            {hojeAtendimentos.map((at) => {
               const atDate = new Date(at.data_hora)
               const isPast = atDate < now
-              const isAgendado = at.status === 'Agendado'
-              const isProximo = isAgendado && !isPast
               const pac = at.expand?.paciente_id
+              const statusCfg = getStatusConfig(at.status)
+
+              // Estados visuais
+              const isRealizado = at.status === 'Realizado'
+              const isEmAtendimento = at.status === 'Em_atendimento'
+              const isPendente =
+                !isRealizado && at.status !== 'Cancelado' && at.status !== 'No_show'
+              const podeIniciarConsulta = isPendente && !!at.paciente_id
 
               const initials = pac?.nome
                 ? pac.nome
@@ -235,51 +336,74 @@ export default function AgendaHojeView({
                 <div
                   key={at.id}
                   onClick={() => at.paciente_id && navigate(`/pacientes/${at.paciente_id}`)}
-                  className={`p-4 transition-colors group cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                    isProximo
-                      ? 'bg-[#E2F0EB]/30 hover:bg-[#E2F0EB]/50 border-l-4 border-l-[#166A5A]'
-                      : isPast && isAgendado
-                        ? 'bg-amber-50/30 hover:bg-amber-50/50 border-l-4 border-l-amber-400'
-                        : at.status === 'Realizado'
-                          ? 'bg-white hover:bg-[#F7F6F3]/60 border-l-4 border-l-emerald-500'
-                          : 'bg-white hover:bg-[#F7F6F3]/60 border-l-4 border-l-gray-300'
+                  style={{
+                    borderRightWidth: '8px',
+                    borderRightColor: statusCfg.color,
+                  }}
+                  className={`p-4 transition-all group cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    isRealizado
+                      ? 'bg-slate-50/70 opacity-70 hover:opacity-100 hover:bg-slate-100/80'
+                      : isEmAtendimento
+                        ? 'bg-emerald-50/70 border-l-4 border-l-[#166A5A] ring-1 ring-emerald-200'
+                        : at.status === 'Chegou'
+                          ? 'bg-teal-50/50 border-l-4 border-l-teal-500'
+                          : isPast && at.status === 'Agendado'
+                            ? 'bg-amber-50/40 hover:bg-amber-50/60 border-l-4 border-l-amber-400'
+                            : 'bg-white hover:bg-[#F7F6F3]/70'
                   }`}
                 >
-                  {/* Horário + Paciente + Tipo */}
-                  <div className="flex items-start sm:items-center gap-3.5">
+                  {/* Horário + Avatar + Detalhes do Paciente */}
+                  <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
                     {/* Badge Horário */}
-                    <div className="flex flex-col items-center justify-center min-w-[62px] px-2.5 py-1.5 rounded-xl bg-white border border-[#E3E7E5] shadow-2xs text-center">
+                    <div className="flex flex-col items-center justify-center min-w-[66px] px-2.5 py-1.5 rounded-xl bg-white border border-[#E3E7E5] shadow-2xs text-center shrink-0">
                       <span className="text-xs font-bold text-[#1C2B29]">
                         {formatHora(at.data_hora)}
                       </span>
                       <span className="text-[10px] text-[#667C78] font-medium flex items-center gap-0.5">
                         <Clock className="h-2.5 w-2.5" />
-                        {isPast
-                          ? at.status === 'Realizado'
-                            ? 'concluído'
-                            : 'já passou'
-                          : 'a seguir'}
+                        {isRealizado
+                          ? 'atendido'
+                          : isEmAtendimento
+                            ? 'em curso'
+                            : at.status === 'Chegou'
+                              ? 'na recepção'
+                              : isPast
+                                ? 'atrasado'
+                                : 'previsto'}
                       </span>
                     </div>
 
                     {/* Avatar */}
                     <Avatar className="h-10 w-10 border border-[#E3E7E5] shrink-0">
-                      <AvatarFallback className="bg-[#166A5A]/10 text-[#166A5A] font-bold text-xs">
+                      <AvatarFallback
+                        className={`${
+                          isRealizado
+                            ? 'bg-slate-200 text-slate-600'
+                            : isEmAtendimento
+                              ? 'bg-[#166A5A] text-white animate-pulse'
+                              : 'bg-[#166A5A]/10 text-[#166A5A]'
+                        } font-bold text-xs`}
+                      >
                         {initials}
                       </AvatarFallback>
                     </Avatar>
 
-                    {/* Detalhes do Paciente & Procedimento */}
-                    <div className="space-y-0.5 min-w-0">
+                    {/* Dados Paciente & Procedimento */}
+                    <div className="space-y-0.5 min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold text-sm text-[#1C2B29] group-hover:text-[#166A5A] transition-colors truncate">
+                        <p
+                          className={`font-semibold text-sm truncate transition-colors ${
+                            isRealizado
+                              ? 'text-slate-600 line-through decoration-slate-400'
+                              : 'text-[#1C2B29] group-hover:text-[#166A5A]'
+                          }`}
+                        >
                           {pac?.nome || 'Paciente sem identificação'}
                         </p>
-                        {isProximo && (
-                          <Badge className="bg-[#166A5A] text-white hover:bg-[#166A5A] text-[10px] px-1.5 py-0">
-                            Próximo
-                          </Badge>
-                        )}
+
+                        {/* Rótulo textual do status com badge configurada */}
+                        {getStatusBadge(at.status)}
+
                         {pac?.convenio && (
                           <Badge
                             variant="outline"
@@ -306,6 +430,22 @@ export default function AgendaHojeView({
                             </span>
                           </>
                         )}
+                        {at.hora_chegada && (
+                          <>
+                            <span>•</span>
+                            <span className="text-teal-700 font-medium">
+                              Chegou às {formatHora(at.hora_chegada)}
+                            </span>
+                          </>
+                        )}
+                        {at.hora_inicio_atendimento && (
+                          <>
+                            <span>•</span>
+                            <span className="text-[#166A5A] font-medium">
+                              Iniciou às {formatHora(at.hora_inicio_atendimento)}
+                            </span>
+                          </>
+                        )}
                       </div>
 
                       {at.observacoes && (
@@ -316,47 +456,108 @@ export default function AgendaHojeView({
                     </div>
                   </div>
 
-                  {/* Status & Ações Rápidas */}
+                  {/* Ações Rápidas + Botão "Iniciar consulta" */}
                   <div
-                    className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E3E7E5]/50"
+                    className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E3E7E5]/50"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div>{getStatusBadge(at.status)}</div>
+                    {/* Botão INICIAR CONSULTA (estilo MedX): visível apenas se ainda não atendido e tem paciente */}
+                    {podeIniciarConsulta && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleIniciarConsulta(at)}
+                        className={`${
+                          isEmAtendimento
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white animate-pulse'
+                            : 'bg-[#166A5A] hover:bg-[#0F5145] text-white shadow-xs'
+                        } h-8 rounded-xl text-xs font-semibold px-3 gap-1.5`}
+                        title={
+                          isEmAtendimento
+                            ? 'Consulta em andamento — ir para prontuário'
+                            : 'Iniciar consulta e abrir prontuário'
+                        }
+                      >
+                        {isEmAtendimento ? (
+                          <>
+                            <Stethoscope className="h-3.5 w-3.5" />
+                            <span>Em Consulta</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-3.5 w-3.5 fill-current" />
+                            <span>Iniciar consulta</span>
+                          </>
+                        )}
+                      </Button>
+                    )}
 
-                    {isAgendado && onMudarStatus && (
+                    {/* Ações de status adicionais (Chegou / Concluir / No-show) */}
+                    {onMudarStatus && (
                       <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onMudarStatus(at.id, 'Realizado')}
-                          title="Marcar como Realizado"
-                          className="h-8 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 rounded-lg px-2.5 gap-1 font-semibold"
-                        >
-                          <Check className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline">Concluir</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onMudarStatus(at.id, 'No_show')}
-                          title="Marcar No-show"
-                          className="h-8 text-xs bg-red-50 text-red-700 hover:bg-red-100 border-red-200 rounded-lg px-2"
-                        >
-                          <XCircle className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline">No-show</span>
-                        </Button>
+                        {at.status === 'Agendado' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onMudarStatus(at.id, 'Chegou')}
+                            title="Marcar chegada na recepção"
+                            className="h-8 text-xs bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200 rounded-lg px-2 gap-1 font-medium"
+                          >
+                            <Activity className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline">Chegou</span>
+                          </Button>
+                        )}
+
+                        {at.status !== 'Realizado' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onMudarStatus(at.id, 'Realizado')}
+                            title="Marcar como Concluído / Atendido"
+                            className="h-8 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 rounded-lg px-2.5 gap-1 font-semibold"
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Concluir</span>
+                          </Button>
+                        )}
+
+                        {at.status !== 'Realizado' && at.status !== 'No_show' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onMudarStatus(at.id, 'No_show')}
+                            title="Marcar No-show (Não compareceu)"
+                            className="h-8 text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200 rounded-lg px-2"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline">No-show</span>
+                          </Button>
+                        )}
                       </div>
                     )}
 
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => at.paciente_id && navigate(`/pacientes/${at.paciente_id}`)}
-                      className="h-8 w-8 text-[#667C78] hover:text-[#166A5A] hover:bg-[#E2F0EB] rounded-lg"
-                      title="Ver Ficha"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    {/* Atalhos padrão MedX: Contato / Prontuário */}
+                    {at.paciente_id && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => navigate(`/pacientes/${at.paciente_id}?tab=visao-geral`)}
+                          className="h-8 w-8 text-[#667C78] hover:text-[#166A5A] hover:bg-[#E2F0EB] rounded-lg"
+                          title="Abrir Prontuário / Ficha"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => navigate(`/pacientes/${at.paciente_id}?tab=faturamento`)}
+                          className="h-8 w-8 text-[#667C78] hover:text-[#C9A227] hover:bg-amber-50 rounded-lg"
+                          title="Abrir Faturamento do Paciente"
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )

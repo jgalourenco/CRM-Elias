@@ -137,16 +137,43 @@ export default function Agendas() {
   // Handle status update
   const handleMudarStatus = async (atId: string, novoStatus: StatusAtendimento) => {
     try {
-      await atendimentosService.update(atId, { status: novoStatus })
+      const updateData: Partial<Atendimento> = { status: novoStatus }
+      if (novoStatus === 'Chegou') {
+        updateData.hora_chegada = new Date().toISOString()
+      } else if (novoStatus === 'Em_atendimento') {
+        updateData.hora_inicio_atendimento = new Date().toISOString()
+      } else if (novoStatus === 'Realizado') {
+        updateData.hora_fim_atendimento = new Date().toISOString()
+      }
+      await atendimentosService.update(atId, updateData)
       toast({
         title: 'Status atualizado',
-        description: `Atendimento marcado como ${novoStatus}.`,
+        description: `Atendimento marcado como ${novoStatus.replace('_', ' ')}.`,
       })
       fetchData()
     } catch {
       toast({
         title: 'Erro',
         description: 'Não foi possível atualizar o status.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // Handle Iniciar Consulta
+  const handleIniciarConsulta = async (at: Atendimento) => {
+    try {
+      await atendimentosService.update(at.id, {
+        status: 'Em_atendimento',
+        hora_inicio_atendimento: new Date().toISOString(),
+      })
+      if (at.paciente_id) {
+        navigate(`/pacientes/${at.paciente_id}?modo=atendimento&atendimentoId=${at.id}`)
+      }
+    } catch {
+      toast({
+        title: 'Erro ao iniciar',
+        description: 'Não foi possível iniciar a consulta.',
         variant: 'destructive',
       })
     }
@@ -300,6 +327,7 @@ export default function Agendas() {
               setModalNovo(true)
             }}
             onMudarStatus={handleMudarStatus}
+            onIniciarConsulta={handleIniciarConsulta}
           />
 
           {/* Card com os próximos dias logo abaixo para visão contínua */}

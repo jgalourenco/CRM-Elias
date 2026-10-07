@@ -1,0 +1,783 @@
+<html lang="pt-br" ng-app="MEDX">
+  <head>
+    <!-- Meta dados da pagina -->
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no" />
+    <title>MEDX</title>
+    <!-- FIM -->
+    <!-- Arquivos kendo -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/angular.min.js"></script>
+    <script src="../kendoFiles/kendo.all.min.js"></script>
+
+    <script src="../js/app.js"></script>
+    <script src="../js/ngStorage.min.js"></script>
+    <script src="../services/httpServicesMEDX.js"></script>
+
+    <script src="../services/usuario.js"></script>
+    <script src="../js/angular-locale_pt-br.js"></script>
+    <!-- FIM -->
+    <script src="./../kendoFiles/kendoJS/cultures/kendo.culture.pt-BR.min.js"></script>
+    <script src="./../kendoFiles/kendoJS/messages/kendo.messages.pt-BR.min.js"></script>
+    <!-- Arquivos Com Fuções JS -->
+    <script language="javascript" src="../funcoes.js?version=20260907"></script>
+    <!-- FIM -->
+    <!-- Arquivos Css kendo -->
+    <link rel="stylesheet" href="../kendoFiles/all.css" />
+    <script src="../js/moment.min.js"></script>
+    <link rel="stylesheet" href="../styles/bootstrap.min.css" />
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- FIM -->
+    <!-- ARQUIVOS DA PAGINA -->
+    <link rel="stylesheet" href="styles/menuInferior.css?version=20260907" />
+    <link rel="stylesheet" href="styles/exames.css?version=20260907" />
+    <script language="javascript" src="controllers/exames.js?version=20260907"></script>
+    <!-- FIM DOS ARQUIVOS DA PAGINA   -->
+    <!-- ARQUIVOS DE ALERTAS -->
+    <link rel="stylesheet" href="../styles/toastr.min.css" />
+    <script language="javascript" src="../js/toastr.min.js"></script>
+    <!-- FIM ARQUIVOS DE ALERTAS   -->
+
+    <script src="../menuControllerMedico.js?version=20260907"></script>
+    <script src="../filters/dataFilters.js"></script>
+    <script src="../filters/statusFilters.js"></script>
+    <script src="../filters/textFilters.js"></script>
+    <script src="../filters/htmlFilters.js"></script>
+    <!-- ARQUIVOS TIMELINE -->
+    <link rel="stylesheet" href="../styles/toastr.min.css" />
+    <script language="javascript" src="../js/toastr.min.js"></script>
+    <!-- FIM ARQUIVOS TIMELINE -->
+    <!-- Icons -->
+    <link rel="stylesheet" href="./../fonts/material-icons.css" />
+    <!-- FIM Icons -->
+    <!-- ARQUIVOS DO DATE RANGER -->
+    <script src="../js/daterangepicker.js"></script>
+    <link rel="stylesheet" href="../styles/daterangepicker.css" />
+    <link rel="stylesheet" href="../styles/font-awesome.min.css" />
+    <!-- FIM ARQUIVOS DO DATE RANGER -->
+
+    <link rel="stylesheet" href="../js/loadTop/loading-bar.min.css" />
+    <script src="../js/loadTop/loading-bar.min.js"></script>
+
+    <script src="../js/agora-rtm-sdk-1.2.2.js"></script>
+    <script src="../services/newChat.js?version=20260907"></script>
+  </head>
+
+  <body id="examesCtrl" ng-controller="examesCtrl">
+    <div
+      id="menuNav"
+      ng-include="'../menuMedico.html?version=20260907'"
+      ng-controller="menuPrinciapalMedicos"
+    ></div>
+    <div id="conteudo">
+      <div id="divPrincipalExames">
+        <div class="divsExames borderPanel">
+          <div style="display: flex; flex-direction: column; height: 100%">
+            <div style="margin-bottom: 7px">
+              <label style="margin-top: 8px">
+                <b id="dia"></b>
+              </label>
+              <div class="input-group">
+                <div class="input-group-prepend" onclick="focoBusca()">
+                  <span
+                    class="input-group-text"
+                    id="inputGroup-sizing-default"
+                    data-toggle="tooltip"
+                    title="Buscar exame"
+                  >
+                    <i class="material-icons">search</i>
+                  </span>
+                </div>
+                <input
+                  type="search"
+                  name="search"
+                  aria-label="Default"
+                  class="form-control"
+                  ng-model="filtroExames"
+                  placeholder="Escreva aqui o nome do exame que deseja buscar."
+                  aria-describedby="inputGroup-sizing-default"
+                />
+              </div>
+            </div>
+            <div id="griddeexames" style="display: flex; height: 100%; overflow-y: auto">
+              <table class="table table-striped" style="margin-top: 5px">
+                <tbody>
+                  <tr ng-repeat="exame in listaExames | filter:filtroExames">
+                    <td style="vertical-align: middle">
+                      <i class="material-icons commandcolor" ng-click="btnConversao(exame)"
+                        >cached</i
+                      >
+                      <label style="vertical-align: text-bottom; margin-left: 5px"
+                        >{{exame.Exame}}</label
+                      >
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        class="form-control"
+                        style="width: 90px; display: inline"
+                        min="0"
+                        ng-blur="salvaExames(exame)"
+                        ng-change="changeNumber(exame)"
+                        ng-value="exame.Resultado"
+                        ng-model="exame.Resultado"
+                      />
+                    </td>
+                    <td style="vertical-align: middle">
+                      {{exame.Peso}}<span
+                        class="negrito inlineBlock juntaPesoVolume"
+                        style="margin-left: 4px"
+                        ng-if="exame.Volume != '' && exame.Peso != ''"
+                        >/</span
+                      >{{exame.Volume}}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="divsExames borderPanel" style="margin-left: 14px; position: relative">
+          <div>
+            <div style="margin-top: 12px">
+              <label>
+                <b>Digitador automático de exames</b>
+              </label>
+            </div>
+          </div>
+          <div style="border: 1px solid #d5d5d5; display: flex; width: 100%; height: 42px; flex: 1">
+            <div
+              style="
+                padding: 4px;
+                border-radius: 5px;
+                width: 100%;
+                display: flex;
+                flex: 1;
+                align-items: center;
+              "
+            >
+              <input
+                type="file"
+                id="arquivoParaInterpretar"
+                style="visibility: hidden; position: absolute; top: -110; width: 100%"
+              />
+              <label
+                id="labelAddArquivos"
+                class="btn btn-primary btn-sm mt-2"
+                for="arquivoParaInterpretar"
+                style="width: 100%; height: 25px; /* margin-bottom: 100%; */ display: inline"
+              >
+                <i
+                  class="material-icons commandcolor"
+                  style="font-size: 17px; vertical-align: bottom; color: #fff"
+                  >cloud_upload</i
+                >
+                Adicionar PDF para interpretar
+              </label>
+            </div>
+          </div>
+          <div
+            style="border: 1px solid #d5d5d5; margin-top: 5px; height: 75px"
+            ng-if="pdfInterpretar != null"
+          >
+            <div
+              ng-if="pdfInterpretar != null"
+              style="text-align: center; font-size: 16px; font-weight: 400; margin-bottom: 10px"
+            >
+              <span>Arquivo: </span>
+              <span id="nomePDF" style="font-weight: 500; color: var(--blue)"
+                >{{pdfInterpretar.arquivos.filename}}</span
+              >
+            </div>
+            <div
+              style="display: flex; justify-content: space-evenly"
+              ng-if="pdfInterpretar != null"
+            >
+              <button class="btn btn-secondary mr-3" ng-click="cancelarPDF()">Cancelar</button>
+              <button
+                class="btn btn-primary"
+                ng-click="uploadPDF()"
+                ng-if="pdfInterpretar.enviado != 'erro'"
+              >
+                Interpretar PDF
+              </button>
+            </div>
+
+            <div>
+              <span ng-if="pdfInterpretar.enviado == 'erro'">{{pdfInterpretar.motivo}}</span>
+            </div>
+          </div>
+
+          <div id="divTextoLaudo" style="margin-top: 8px">
+            <div>
+              <label style="color: dimgray">
+                <b>Ou copie e cole os resultados (OBSOLETO)</b>
+              </label>
+              <!--<label>
+                        Copie o texto do laudo de exames laboratoriais e cole abaixo
+                        (CTRL + V ou
+                        Command + V).
+                    </label>-->
+              <textarea
+                name="interpretador"
+                id="interpretadorExames"
+                ng-model="interpretadorExames"
+                placeholder="Copie o texto do laudo de exames laboratoriais e cole aqui (CTRL + V ou Command + V)."
+              >
+              </textarea>
+              <button
+                class="btn btn-secondary"
+                ng-click="interpretarExames(interpretadorExames)"
+                ng-disabled="!interpretadorExames"
+              >
+                Interpretar Laudo (OBSOLETO)
+              </button>
+            </div>
+          </div>
+          <div
+            id="loadExame"
+            class="loading-bol"
+            style="z-index: 90000001; position: absolute !important"
+          >
+            <h2>Analisando o documento</h2>
+            <span class="loaderBol"></span>
+            <p>A análise pode demorar de 30 segundos até 2 minutos!</p>
+            <p>Por favor aguarde!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-menu-inferior">
+      <nav>
+        <div class="content-botao-munu-inferior">
+          <a ng-click="redirecionar('receituario')">
+            <svg width="256" height="256" viewBox="0 0 256 256">
+              <g id="_10_back_arrow" data-name="10_back_arrow" transform="translate(4 4)">
+                <path
+                  id="Path_52"
+                  data-name="Path 52"
+                  d="M124,0A124,124,0,1,0,248,124,124.141,124.141,0,0,0,124,0Zm0,225.455A101.455,101.455,0,1,1,225.455,124,101.569,101.569,0,0,1,124,225.455Z"
+                  stroke="#fff"
+                  stroke-width="8"
+                  style="fill: #501055"
+                ></path>
+                <path
+                  id="Path_53"
+                  data-name="Path 53"
+                  d="M196.484,135.085l-78,0,25.846-25.847A11.273,11.273,0,1,0,128.393,93.3L83.3,138.392a11.271,11.271,0,0,0,0,15.942l45.091,45.09a11.272,11.272,0,0,0,15.941-15.942l-25.848-25.848,78,0a11.272,11.272,0,1,0,0-22.545Z"
+                  transform="translate(-19.879 -22.363)"
+                  stroke="#fff"
+                  stroke-width="8"
+                  style="fill: #501055"
+                ></path>
+              </g>
+            </svg>
+            <span>Voltar</span>
+          </a>
+        </div>
+        <div class="content-botao-munu-inferior">
+          <a onclick="menssagemAlerta('sucesso', 'Exames salvos com sucesso.')">
+            <svg
+              id="_12_Save"
+              data-name="12_Save"
+              xmlns="http://www.w3.org/2000/svg"
+              width="296.466"
+              height="296.466"
+              viewBox="0 0 296.466 296.466"
+            >
+              <path
+                id="Path_81"
+                data-name="Path 81"
+                d="M227.224,3H22.5A19.5,19.5,0,0,0,3,22.5V266.219a19.5,19.5,0,0,0,19.5,19.5H266.219a19.5,19.5,0,0,0,19.5-19.5V42l-39-39Z"
+                transform="translate(3.874 3.874)"
+                fill="#eef9fa"
+              ></path>
+              <path
+                id="Path_82"
+                data-name="Path 82"
+                d="M180.731,3V85.865a9.778,9.778,0,0,1-9.749,9.749H24.749A9.778,9.778,0,0,1,15,85.865V3Z"
+                transform="translate(50.368 3.874)"
+                fill="#ffd54f"
+              ></path>
+              <path
+                id="Path_83"
+                data-name="Path 83"
+                d="M39,7H68.247V60.619H39Z"
+                transform="translate(143.354 19.372)"
+                fill="#fff"
+              ></path>
+              <path
+                id="Path_84"
+                data-name="Path 84"
+                d="M213.726,31H28.5A19.5,19.5,0,0,0,9,50.5V177.233H233.224V50.5A19.5,19.5,0,0,0,213.726,31Z"
+                transform="translate(27.121 112.358)"
+                fill="#139ad3"
+                style="fill: #9b39a3"
+              ></path>
+              <path
+                id="Path_85"
+                data-name="Path 85"
+                d="M3,56v4.874a19.5,19.5,0,0,0,19.5,19.5h9.749V56Z"
+                transform="translate(3.874 209.219)"
+                fill="#bddbff"
+              ></path>
+              <g id="Group_35" data-name="Group 35" transform="translate(2 2)">
+                <path
+                  id="Path_88"
+                  data-name="Path 88"
+                  d="M293.038,42.424l-39-39A4.875,4.875,0,0,0,250.6,2H26.372A24.4,24.4,0,0,0,2,26.372V270.094a24.4,24.4,0,0,0,24.372,24.372H270.094a24.4,24.4,0,0,0,24.372-24.372V45.87a4.874,4.874,0,0,0-1.427-3.445ZM226.224,11.749V89.74a4.874,4.874,0,0,1-4.874,4.874H75.116a4.874,4.874,0,0,1-4.874-4.874V11.749ZM41,284.717V162.856a14.623,14.623,0,0,1,14.623-14.623H240.847a14.623,14.623,0,0,1,14.623,14.623V284.717Zm243.722-14.623a14.623,14.623,0,0,1-14.623,14.623h-4.874V162.856a24.4,24.4,0,0,0-24.372-24.372H55.619a24.4,24.4,0,0,0-24.372,24.372V284.717H26.372a14.623,14.623,0,0,1-14.623-14.623V26.372A14.623,14.623,0,0,1,26.372,11.749H60.493V89.74a14.623,14.623,0,0,0,14.623,14.623H221.349A14.623,14.623,0,0,0,235.973,89.74V11.749h12.605l36.139,36.139Z"
+                  transform="translate(-2 -2)"
+                  fill="#083863"
+                  stroke="#083863"
+                  stroke-width="4"
+                  style="fill: #501055"
+                ></path>
+                <path
+                  id="Path_89"
+                  data-name="Path 89"
+                  d="M42.874,69.368H72.121A4.874,4.874,0,0,0,77,64.493V10.874A4.874,4.874,0,0,0,72.121,6H42.874A4.874,4.874,0,0,0,38,10.874V64.493A4.874,4.874,0,0,0,42.874,69.368Zm4.874-53.619h19.5v43.87h-19.5Z"
+                  transform="translate(137.479 13.498)"
+                  fill="#083863"
+                  stroke="#083863"
+                  stroke-width="4"
+                  style="fill: #501055"
+                ></path>
+                <path
+                  id="Path_90"
+                  data-name="Path 90"
+                  d="M167.107,45H20.874a4.874,4.874,0,1,0,0,9.749H167.107a4.874,4.874,0,1,0,0-9.749Z"
+                  transform="translate(52.242 164.6)"
+                  fill="#083863"
+                  stroke="#083863"
+                  stroke-width="4"
+                  style="fill: #501055"
+                ></path>
+                <path
+                  id="Path_91"
+                  data-name="Path 91"
+                  d="M167.107,39H20.874a4.874,4.874,0,1,0,0,9.749H167.107a4.874,4.874,0,1,0,0-9.749Z"
+                  transform="translate(52.242 141.354)"
+                  fill="#083863"
+                  stroke="#083863"
+                  stroke-width="4"
+                  style="fill: #501055"
+                ></path>
+                <path
+                  id="Path_92"
+                  data-name="Path 92"
+                  d="M167.107,51H20.874a4.874,4.874,0,1,0,0,9.749H167.107a4.874,4.874,0,1,0,0-9.749Z"
+                  transform="translate(52.242 187.847)"
+                  fill="#083863"
+                  stroke="#083863"
+                  stroke-width="4"
+                  style="fill: #501055"
+                ></path>
+              </g>
+            </svg>
+
+            <span>Salvar</span>
+          </a>
+        </div>
+        <div class="content-botao-munu-inferior">
+          <a ng-click="excluirExames()">
+            <svg
+              id="_3_Delete"
+              data-name="3_Delete"
+              xmlns="http://www.w3.org/2000/svg"
+              width="233.652"
+              height="315"
+              viewBox="0 0 233.652 315"
+            >
+              <path
+                id="Path_11"
+                data-name="Path 11"
+                d="M230.161,83.036v37.773H10V83.036A20.236,20.236,0,0,1,30.236,62.8h179.69A20.234,20.234,0,0,1,230.161,83.036Zm0,0"
+                transform="translate(-3.254 -20.441)"
+                fill="#ffd6d6"
+              ></path>
+              <path
+                id="Path_12"
+                data-name="Path 12"
+                d="M220.181,149.069V327.682c0,16.924-12.081,29-26.981,29H65.583c-14.9,0-26.981-12.081-26.981-29V148.8H220.181Zm0,0"
+                transform="translate(-12.564 -48.432)"
+                fill="#9b39a3"
+              ></path>
+              <g id="Group_7" data-name="Group 7" transform="translate(0)">
+                <path
+                  id="Path_13"
+                  data-name="Path 13"
+                  d="M229.347,332.918a6.745,6.745,0,0,0,6.745-6.745V191.944a6.745,6.745,0,0,0-13.49,0V326.173A6.745,6.745,0,0,0,229.347,332.918Zm0,0"
+                  transform="translate(-72.453 -60.279)"
+                  fill="#fff"
+                ></path>
+                <path
+                  id="Path_14"
+                  data-name="Path 14"
+                  d="M110.546,332.918a6.745,6.745,0,0,0,6.745-6.745V191.944a6.745,6.745,0,0,0-13.49,0V326.173A6.745,6.745,0,0,0,110.546,332.918Zm0,0"
+                  transform="translate(-33.785 -60.279)"
+                  fill="#fff"
+                ></path>
+                <path
+                  id="Path_15"
+                  data-name="Path 15"
+                  d="M206.671,35.615H173.756V26.981A27.012,27.012,0,0,0,146.776,0h-59.9A27.009,27.009,0,0,0,59.9,26.981v8.634H26.98A27.009,27.009,0,0,0,0,62.6v37.773a6.745,6.745,0,0,0,6.745,6.745H19.292V279.25a36.68,36.68,0,0,0,9.759,25.5A32.762,32.762,0,0,0,53.018,315H180.636A32.762,32.762,0,0,0,204.6,304.747a36.675,36.675,0,0,0,9.759-25.5V107.114h12.544a6.745,6.745,0,0,0,6.745-6.745V62.6a27.009,27.009,0,0,0-26.981-26.981ZM73.387,26.981a13.506,13.506,0,0,1,13.49-13.49h59.9a13.508,13.508,0,0,1,13.49,13.49v8.634H73.387ZM200.871,279.25c0,12.689-8.7,22.259-20.236,22.259H53.018c-11.535,0-20.236-9.57-20.236-22.259V107.114H200.871Zm19.29-185.627H13.49V62.6a13.5,13.5,0,0,1,13.49-13.49H206.67a13.5,13.5,0,0,1,13.49,13.49Zm0,0"
+                  transform="translate(0)"
+                  fill="#501055"
+                ></path>
+              </g>
+            </svg>
+
+            <span>Excluir </span>
+          </a>
+        </div>
+      </nav>
+    </div>
+    <div id="popup-conversor">
+      <div id="windowConversor" style="display: none">
+        <form>
+          <label> Item: <b> {{itemSelecionado.Exame}}</b>. </label>
+          <br />
+          <div class="form-group">
+            <label for="">Resultado</label>
+            <input type="number" class="form-control" id="inputConvertResultado" />
+          </div>
+          <div class="form-group">
+            <label for="inputConvertPeso">Unidade Peso</label>
+            <input class="form-control" id="inputConvertPeso" />
+          </div>
+          <div class="form-group">
+            <label for="inputConvertVolume">Unidade Volume</label>
+            <input class="form-control" id="inputConvertVolume" />
+          </div>
+          <button class="btn btn-primary" ng-click="btnConverter(itemSelecionado)">
+            Converter
+          </button>
+        </form>
+      </div>
+    </div>
+    <div id="popup-alterados" style="display: none">
+      <div>
+        <div id="textoExamesAlterados"></div>
+        <div style="display: flex; gap: 5px; margin-top: 16px">
+          <button ng-click="btnCancelarAlterados()" class="w-100 btn btn-outline-primary">
+            Não
+          </button>
+          <button ng-click="btnAlterados(true)" class="w-100 btn btn-primary">Sim</button>
+        </div>
+      </div>
+    </div>
+    <div id="popup-exportados">
+      <div class="container">
+        <div class="row">
+          <table class="table">
+            <tbody>
+              <tr ng-repeat="exames in examesExportados">
+                <td>{{exames}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="popup-avisoInterpretador">
+      <div style="max-width: 100%; max-height: 100%; display: flex; justify-content: center">
+        <svg
+          style="height: 180px"
+          id="Layer_1"
+          data-name="Layer 1"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 2389.04 2000"
+        >
+          <defs>
+            <style>
+              .cls-1 {
+                fill: #fff !important;
+              }
+
+              .cls-2 {
+                fill: #ff424d !important;
+              }
+
+              .cls-3 {
+                fill: #dcf4ff !important;
+              }
+
+              .cls-4 {
+                fill: #d3f0ef !important;
+              }
+
+              .cls-5 {
+                fill: #b1e8fc !important;
+              }
+
+              .cls-6 {
+                fill: #49263e !important;
+              }
+
+              .cls-7 {
+                fill: #4cb7d8 !important;
+              }
+            </style>
+          </defs>
+          <path
+            class="cls-4"
+            d="m1679.12,1791.35c260.1-80.46,542.56-299.94,529.36-747.7-15.2-515.67-531.21-829.05-699.05-873.92-167.84-44.86-336.94-24.38-385.14,61.33-67.46,119.97-121.57,135.51-263.47,129.3-76.72-3.36-424.01-117.12-613.11,250.19-119.36,231.84-103.04,794.04,232.45,1068.78,280.4,229.63,938.86,192.48,1198.95,112.01Z"
+          />
+          <g>
+            <path
+              class="cls-6"
+              d="m1742.11,1723.6c.03,18.48-14.83,33.49-33.2,33.52l-1025.12,1.84c-18.36.03-33.28-14.92-33.31-33.4l-2.45-1362.58c-.03-18.48,14.82-33.48,33.19-33.51l1025.12-1.85c18.37-.03,33.28,14.92,33.31,33.4l2.46,1362.58Z"
+            />
+            <path
+              class="cls-7"
+              d="m1195.2,241.03c-84.19,0-152.43,68.25-152.43,152.43,0,.11,0,.21,0,.32h304.86c0-.11,0-.21,0-.32,0-84.19-68.25-152.43-152.43-152.43Zm0,114.48c-14.9,0-26.98-12.08-26.98-26.98s12.08-26.98,26.98-26.98,26.98,12.08,26.98,26.98-12.08,26.98-26.98,26.98Z"
+            />
+            <path
+              class="cls-1"
+              d="m719.53,1607.36V457.65c0-35.27,28.59-63.87,63.87-63.87h823.61c35.27,0,63.87,28.59,63.87,63.87v957.04c0,16.57-6.44,32.48-17.95,44.39l-186.27,192.66c-12.03,12.45-28.6,19.47-45.91,19.47h-637.34c-35.27,0-63.87-28.59-63.87-63.87Z"
+            />
+            <path
+              class="cls-5"
+              d="m962.83,741.74h-152.4c-8.84,0-16-7.16-16-16v-152.4c0-8.84,7.16-16,16-16h152.4c8.84,0,16,7.16,16,16v152.4c0,8.84-7.16,16-16,16Zm-145.09-13.31h137.78c5.52,0,10-4.48,10-10v-137.78c0-5.52-4.48-10-10-10h-137.78c-5.52,0-10,4.48-10,10v137.78c0,5.52,4.48,10,10,10Z"
+            />
+            <path
+              class="cls-5"
+              d="m962.83,994.84h-152.4c-8.84,0-16-7.16-16-16v-152.4c0-8.84,7.16-16,16-16h152.4c8.84,0,16,7.16,16,16v152.4c0,8.84-7.16,16-16,16Zm-145.09-13.31h137.78c5.52,0,10-4.48,10-10v-137.78c0-5.52-4.48-10-10-10h-137.78c-5.52,0-10,4.48-10,10v137.78c0,5.52,4.48,10,10,10Z"
+            />
+            <path
+              class="cls-5"
+              d="m962.83,1247.95h-152.4c-8.84,0-16-7.16-16-16v-152.4c0-8.84,7.16-16,16-16h152.4c8.84,0,16,7.16,16,16v152.4c0,8.84-7.16,16-16,16Zm-145.09-13.31h137.78c5.52,0,10-4.48,10-10v-137.78c0-5.52-4.48-10-10-10h-137.78c-5.52,0-10,4.48-10,10v137.78c0,5.52,4.48,10,10,10Z"
+            />
+            <g>
+              <rect
+                class="cls-5"
+                x="1025.28"
+                y="587.66"
+                width="564.54"
+                height="18.93"
+                rx="9.47"
+                ry="9.47"
+              />
+              <rect
+                class="cls-5"
+                x="1025.28"
+                y="671.29"
+                width="564.54"
+                height="18.94"
+                rx="9.47"
+                ry="9.47"
+              />
+            </g>
+            <g>
+              <rect
+                class="cls-5"
+                x="1025.28"
+                y="851.36"
+                width="564.54"
+                height="18.93"
+                rx="9.47"
+                ry="9.47"
+              />
+              <rect
+                class="cls-5"
+                x="1025.28"
+                y="934.99"
+                width="564.54"
+                height="18.93"
+                rx="9.47"
+                ry="9.47"
+              />
+            </g>
+            <g>
+              <rect
+                class="cls-5"
+                x="1025.28"
+                y="1115.06"
+                width="564.54"
+                height="18.93"
+                rx="9.47"
+                ry="9.47"
+              />
+              <rect
+                class="cls-5"
+                x="1025.28"
+                y="1198.69"
+                width="564.54"
+                height="18.93"
+                rx="9.47"
+                ry="9.47"
+              />
+            </g>
+            <g>
+              <rect
+                class="cls-5"
+                x="1025.28"
+                y="1378.76"
+                width="564.54"
+                height="18.94"
+                rx="9.47"
+                ry="9.47"
+              />
+              <rect
+                class="cls-5"
+                x="1025.28"
+                y="1462.39"
+                width="564.54"
+                height="18.93"
+                rx="9.47"
+                ry="9.47"
+              />
+            </g>
+            <path
+              class="cls-2"
+              d="m906.43,951.55c-1.45,3.8-6.58,4.37-8.83.99l-61.96-92.99c-1.58-2.41-.95-5.68,1.4-7.3,2.35-1.62,5.53-.98,7.11,1.43l54.26,81.16c.9,1.35,2.95,1.12,3.53-.4l72.02-188.99c1.03-2.7,4-4.04,6.64-2.98,2.64,1.06,3.94,4.11,2.91,6.81l-77.08,202.26Z"
+            />
+            <path
+              class="cls-2"
+              d="m901.58,700.23c-1.45,3.8-6.58,4.37-8.83.99l-61.96-92.99c-1.58-2.41-.95-5.68,1.4-7.3,2.35-1.62,5.53-.98,7.11,1.43l54.26,81.16c.9,1.35,2.95,1.12,3.53-.4l72.02-188.99c1.03-2.7,4-4.04,6.64-2.98,2.64,1.06,3.94,4.11,2.91,6.81l-77.08,202.26Z"
+            />
+            <path
+              class="cls-2"
+              d="m906.43,1202.41c-1.45,3.8-6.58,4.37-8.83.99l-61.96-92.99c-1.58-2.41-.95-5.68,1.4-7.3,2.35-1.62,5.53-.98,7.11,1.43l53.18,79.55c1.35,2.03,4.43,1.68,5.3-.6l71.33-187.18c1.03-2.7,4-4.04,6.64-2.98,2.64,1.06,3.94,4.11,2.91,6.81l-77.08,202.26Z"
+            />
+            <path
+              class="cls-3"
+              d="m1657.24,1454.61l-195.13,201.83c-5.2,5.37-14.29,1.7-14.29-5.78v-201.83c0-4.59,3.72-8.31,8.31-8.31h195.13c7.34,0,11.08,8.82,5.98,14.09Z"
+            />
+            <path
+              class="cls-5"
+              d="m962.83,1519.01h-152.4c-8.84,0-16-7.16-16-16v-152.4c0-8.84,7.16-16,16-16h152.4c8.84,0,16,7.16,16,16v152.4c0,8.84-7.16,16-16,16Zm-145.09-13.31h137.78c5.52,0,10-4.48,10-10v-137.78c0-5.52-4.48-10-10-10h-137.78c-5.52,0-10,4.48-10,10v137.78c0,5.52,4.48,10,10,10Z"
+            />
+            <path
+              class="cls-2"
+              d="m906.43,1473.47c-1.45,3.8-6.58,4.37-8.83.99l-61.96-92.99c-1.58-2.41-.95-5.68,1.4-7.3,2.35-1.62,5.53-.98,7.11,1.43l53.18,79.55c1.35,2.03,4.43,1.68,5.3-.6l71.33-187.18c1.03-2.7,4-4.04,6.64-2.98,2.64,1.06,3.94,4.11,2.91,6.81l-77.08,202.26Z"
+            />
+          </g>
+        </svg>
+      </div>
+
+      <div style="align-items: center; display: flex; flex-direction: column; max-height: 100%">
+        <h3 ng-bind-html="textoAvisoInterpretador" style="text-align: center; font-size: 16px">
+          {{textoAvisoInterpretador}}
+        </h3>
+        <div style="height: 100%; margin-top: 25px">
+          <button
+            class="btn btn-success"
+            style="height: 35px; width: 128px"
+            id="botaoAvisoInterpretador"
+            type="button"
+          >
+            <span
+              class="k-icon k-font-icon k-i-check-circle k-i-checkmark-circle"
+              style="margin-right: 6px"
+            ></span
+            >Estou Ciente
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="popup-interpretados" style="overflow-y: hidden">
+      <label style="text-align: center; font-size: 11pt">
+        <b>Selecione os itens que deseja transportar</b>
+        <!-- <span ng-bind="ocultaDivPreviewPDF">{{ocultaDivPreviewPDF}}</span> -->
+      </label>
+      <div
+        class="container"
+        style="
+          height: 510px;
+          margin-bottom: 15px;
+          padding-left: 0px;
+          display: flex;
+          overflow: hidden;
+        "
+      >
+        <div style="overflow-y: auto; display: flex; flex: 1">
+          <table class="table table-bordered" style="font-size: 10pt">
+            <thead>
+              <tr>
+                <th scope="col" style="text-align: center">#</th>
+                <th scope="col">Exame</th>
+                <th scope="col">Valor</th>
+                <th scope="col">Unidade</th>
+                <!--<th scope="col">Vol.</th>-->
+                <!-- <th scope="col" title="Parte do texto de onde foi retirado o resultado.">Frase</th> -->
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                style="cursor: pointer"
+                ng-repeat="item in exameInterpretados.Resultados"
+                id="item-{{item.IddoExame}}"
+                class="itemInterpretado"
+                ng-click="clickItemInterpretado(item)"
+                ng-class="{itemSelecionadoExames: item.Selecionado == true}"
+              >
+                <td width="5%" style="text-align: center">
+                  <i class="material-icons commandcolor" ng-if="item.Selecionado != true"
+                    >radio_button_unchecked</i
+                  >
+                  <i class="material-icons" style="cursor: pointer" ng-if="item.Selecionado == true"
+                    >radio_button_checked</i
+                  >
+                </td>
+                <td width="200px">
+                  <span class="itens-td-table-interpretados">{{item.Exame}}</span>
+                </td>
+                <td width="50px">
+                  <span class="itens-td-table-interpretados">{{item.Valor}}</span>
+                </td>
+                <td width="70px">
+                  <span class="itens-td-table-interpretados">{{item.Peso}} {{item.Volume}}</span>
+                </td>
+                <!--<td width="30px"><span class="itens-td-table-interpretados"></span></td>-->
+                <!-- <td width="640px">
+                                <div class="divInterpretador">
+                                    overflow: hidden;
+                                    <span style="display: block; text-overflow: ellipsis; width:100%; "
+                                        title="{{item.Frase}}">
+                                        {{item.Frase}}
+                                    </span> 
+                                </div>
+                            </td> -->
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div ng-show="ocultaDivPreviewPDF" class="carregaExame" style="display: flex; flex: 1">
+          <iframe
+            id="examePDF"
+            data=""
+            type="application/pdf"
+            frameborder="0"
+            style="width: 100%; height: 100%"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between">
+        <button
+          class="btn btn-outline-primary mr-3"
+          style="flex: 1"
+          ng-click="cancelarImportacao()"
+        >
+          Cancelar Importação
+        </button>
+        <button
+          class="btn btn-primary"
+          style="flex: 1"
+          ng-click="transportaIntensInterpretados(exameInterpretados.Resultados)"
+        >
+          Exportar itens selecionados
+        </button>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+      document.getElementById('griddeexames').style.height = innerHeight - 185 + 'px'
+    </script>
+  </body>
+</html>

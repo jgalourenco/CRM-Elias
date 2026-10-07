@@ -16,7 +16,14 @@ export type TipoAtendimento =
   | 'Aplicacao_Manipulado'
   | 'Outro'
 
-export type StatusAtendimento = 'Agendado' | 'Realizado' | 'No_show' | 'Cancelado'
+export type StatusAtendimento =
+  | 'Agendado'
+  | 'Confirmado'
+  | 'Chegou'
+  | 'Em_atendimento'
+  | 'Realizado'
+  | 'No_show'
+  | 'Cancelado'
 
 export type TipoLancamento =
   | 'Consulta'
@@ -132,10 +139,26 @@ export interface Atendimento {
   data_hora: string
   status: StatusAtendimento
   observacoes?: string
+  hora_chegada?: string
+  hora_inicio_atendimento?: string
+  hora_fim_atendimento?: string
   created: string
   updated: string
   expand?: {
     paciente_id?: Paciente
+  }
+}
+
+export interface Nota {
+  id: string
+  usuario_id?: string
+  data: string
+  memo: string
+  concluido?: boolean
+  created: string
+  updated: string
+  expand?: {
+    usuario_id?: Usuario
   }
 }
 

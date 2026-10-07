@@ -5,8 +5,13 @@ import {
   prospeccoesService,
   atendimentosService,
   lancamentosService,
+  notasService,
+  usuariosService,
 } from '@/services/crm'
-import { Paciente, Prospeccao, Atendimento, Lancamento } from '@/types/crm'
+import { Paciente, Prospeccao, Atendimento, Lancamento, Nota, Usuario } from '@/types/crm'
+import { useAuth } from '@/contexts/AuthContext'
+import UltimosAtendidosCard from '@/components/dashboard/UltimosAtendidosCard'
+import NotasLembretesCard from '@/components/notas/NotasLembretesCard'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -29,6 +34,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function Dashboard() {
   const { toast } = useToast()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
 
@@ -36,19 +42,25 @@ export default function Dashboard() {
   const [prospeccoes, setProspeccoes] = useState<Prospeccao[]>([])
   const [atendimentos, setAtendimentos] = useState<Atendimento[]>([])
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
+  const [notas, setNotas] = useState<Nota[]>([])
+  const [usuarios, setUsuarios] = useState<Usuario[]>([])
 
   const loadData = async () => {
     try {
-      const [pacRes, prospRes, atRes, lancRes] = await Promise.all([
+      const [pacRes, prospRes, atRes, lancRes, notasRes, userRes] = await Promise.all([
         pacientesService.list(1, 100),
         prospeccoesService.list(),
         atendimentosService.list('', 'data_hora'),
         lancamentosService.list(),
+        notasService.list(),
+        usuariosService.list(),
       ])
       setPacientes(pacRes.items)
       setProspeccoes(prospRes)
       setAtendimentos(atRes)
       setLancamentos(lancRes)
+      setNotas(notasRes)
+      setUsuarios(userRes)
     } catch (err) {
       console.error('Erro ao carregar métricas:', err)
     } finally {
@@ -62,16 +74,89 @@ export default function Dashboard() {
 
   const handleMudarStatusHoje = async (atId: string, status: StatusAtendimento) => {
     try {
-      await atendimentosService.update(atId, { status })
+      const updateData: Partial<Atendimento> = { status }
+      if (status === 'Chegou') {
+        updateData.hora_chegada = new Date().toISOString()
+      } else if (status === 'Em_atendimento') {
+        updateData.hora_inicio_atendimento = new Date().toISOString()
+      } else if (status === 'Realizado') {
+        updateData.hora_fim_atendimento = new Date().toISOString()
+      }
+      await atendimentosService.update(atId, updateData)
       toast({
         title: 'Status atualizado',
-        description: `Atendimento marcado como ${status}.`,
+        description: `Atendimento marcado como ${status.replace('_', ' ')}.`,
       })
       loadData()
     } catch {
       toast({
         title: 'Erro',
         description: 'Não foi possível atualizar o atendimento.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // CRUD de Notas/Lembretes
+  const handleCriarNota = async (novaNota: { memo: string; data: string; usuario_id?: string }) => {
+    try {
+      await notasService.create({
+        ...novaNota,
+        concluido: false,
+        usuario_id: novaNota.usuario_id || user?.id,
+      })
+      toast({ title: 'Nota criada', description: 'Lembrete adicionado com sucesso.' })
+      const atualizadas = await notasService.list()
+      setNotas(atualizadas)
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível criar nota.', variant: 'destructive' })
+    }
+  }
+
+  const handleAtualizarNota = async (id: string, data: Partial<Nota>) => {
+    try {
+      await notasService.update(id, data)
+      toast({ title: 'Nota atualizada' })
+      const atualizadas = await notasService.list()
+      setNotas(atualizadas)
+    } catch {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar nota.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleExcluirNota = async (id: string) => {
+    try {
+      await notasService.delete(id)
+      toast({ title: 'Nota excluída' })
+      const atualizadas = await notasService.list()
+      setNotas(atualizadas)
+    } catch {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível excluir nota.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // Iniciar consulta a partir do card Hoje
+  const handleIniciarConsulta = async (at: Atendimento) => {
+    try {
+      await atendimentosService.update(at.id, {
+        status: 'Em_atendimento',
+        hora_inicio_atendimento: new Date().toISOString(),
+      })
+      if (at.paciente_id) {
+        navigate(`/pacientes/${at.paciente_id}?modo=atendimento&atendimentoId=${at.id}`)
+      }
+    } catch {
+      toast({
+        title: 'Erro ao iniciar',
+        description: 'Não foi possível iniciar a consulta.',
         variant: 'destructive',
       })
     }
@@ -189,14 +274,34 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* PAINEL HOJE EM PRIMEIRO PLANO */}
+      {/* PAINEL HOJE EM PRIMEIRO PLANO COM NOTAS/LEMBRETES LATERAL */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-8">
+          <AgendaHojeView
+            atendimentos={atendimentos}
+            onNovoAtendimento={() => navigate('/agendas')}
+            onMudarStatus={handleMudarStatusHoje}
+            onIniciarConsulta={handleIniciarConsulta}
+            showNovoButton={true}
+          />
+        </div>
+
+        {/* Bloco Lateral: Notas e Lembretes Rápidos por Usuário (como na coluna esquerda do MedX) */}
+        <div className="lg:col-span-4">
+          <NotasLembretesCard
+            notas={notas}
+            usuarios={usuarios}
+            currentUserId={user?.id}
+            onCriarNota={handleCriarNota}
+            onAtualizarNota={handleAtualizarNota}
+            onExcluirNota={handleExcluirNota}
+          />
+        </div>
+      </div>
+
+      {/* BLOCO ÚLTIMOS ATENDIDOS (Estilo MedX: aba "Ver pacientes atendidos" trazida para destaque) */}
       <div className="space-y-2">
-        <AgendaHojeView
-          atendimentos={atendimentos}
-          onNovoAtendimento={() => navigate('/agendas')}
-          onMudarStatus={handleMudarStatusHoje}
-          showNovoButton={true}
-        />
+        <UltimosAtendidosCard atendimentos={atendimentos} maxItems={5} />
       </div>
 
       {/* 4 Cards Métricas */}

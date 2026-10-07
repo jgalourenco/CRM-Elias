@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   pacientesService,
   atendimentosService,
@@ -69,8 +69,16 @@ import {
 
 export default function FichaPaciente() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+
+  const modoAtendimentoParam = searchParams.get('modo') === 'atendimento'
+  const atendimentoIdParam = searchParams.get('atendimentoId')
+  const tabParam = searchParams.get('tab')
+
+  const [emModoAtendimento, setEmModoAtendimento] = useState(modoAtendimentoParam)
+  const [atendimentoAtualId, setAtendimentoAtualId] = useState<string | null>(atendimentoIdParam)
 
   const [paciente, setPaciente] = useState<Paciente | null>(null)
   const [atendimentos, setAtendimentos] = useState<Atendimento[]>([])
@@ -81,7 +89,7 @@ export default function FichaPaciente() {
   const [loading, setLoading] = useState(true)
 
   // Tab State
-  const [activeTab, setActiveTab] = useState('visao-geral')
+  const [activeTab, setActiveTab] = useState(tabParam || 'visao-geral')
 
   // Modals
   const [modalEditarPaciente, setModalEditarPaciente] = useState(false)
@@ -156,6 +164,18 @@ export default function FichaPaciente() {
   useEffect(() => {
     loadData()
   }, [id])
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+    if (searchParams.get('modo') === 'atendimento') {
+      setEmModoAtendimento(true)
+      setActiveTab('visao-geral')
+      const atId = searchParams.get('atendimentoId')
+      if (atId) setAtendimentoAtualId(atId)
+    }
+  }, [searchParams, tabParam])
 
   if (loading) {
     return (
@@ -287,6 +307,38 @@ export default function FichaPaciente() {
       toast({
         title: 'Erro',
         description: 'Não foi possível agendar o atendimento.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // Concluir consulta do modo atendimento
+  const handleConcluirConsultaAtual = async () => {
+    if (!atendimentoAtualId) {
+      setEmModoAtendimento(false)
+      return
+    }
+    try {
+      await atendimentosService.update(atendimentoAtualId, {
+        status: 'Realizado',
+        hora_fim_atendimento: new Date().toISOString(),
+      })
+      await dispatchAutomacao('Agradecimento pela consulta', paciente)
+      toast({
+        title: 'Consulta concluída com sucesso!',
+        description: 'Atendimento finalizado e marcado como Realizado.',
+      })
+      setEmModoAtendimento(false)
+      // Atualizar URL removendo modo=atendimento
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete('modo')
+      newParams.delete('atendimentoId')
+      setSearchParams(newParams)
+      loadData()
+    } catch {
+      toast({
+        title: 'Erro ao concluir',
+        description: 'Não foi possível finalizar o atendimento.',
         variant: 'destructive',
       })
     }
@@ -493,6 +545,54 @@ export default function FichaPaciente() {
         <ArrowLeft className="h-4 w-4" />
         Voltar para a Lista de Pacientes
       </Button>
+
+      {/* BANNER MODO EM ATENDIMENTO (se ativado via Iniciar consulta) */}
+      {emModoAtendimento && (
+        <div className="rounded-2xl bg-gradient-to-r from-[#166A5A] via-[#166A5A] to-[#0F5145] p-5 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 border border-emerald-600/40 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0 border border-white/20">
+              <span className="relative flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-400" />
+              </span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-white tracking-wide">
+                  Consulta em Andamento
+                </h2>
+                <Badge className="bg-emerald-400/20 text-emerald-200 border-emerald-300/30 text-[11px] font-semibold">
+                  Modo Atendimento Ativo
+                </Badge>
+              </div>
+              <p className="text-xs text-emerald-100/90 mt-0.5">
+                Você está atendendo <strong className="text-white">{paciente.nome}</strong>. O
+                prontuário está aberto para preenchimento de anamnese e evolução.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              onClick={handleSalvarAnamnese}
+              disabled={savingAnamnese}
+              variant="outline"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs font-semibold rounded-xl"
+            >
+              {savingAnamnese ? 'Salvando...' : 'Salvar Evolução'}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleConcluirConsultaAtual}
+              className="bg-[#C9A227] hover:bg-[#b08d20] text-white text-xs font-bold rounded-xl gap-1.5 shadow-sm"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Finalizar Atendimento
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Cabeçalho da Ficha */}
       <Card className="rounded-2xl border-[#E3E7E5] bg-white shadow-xs p-6">

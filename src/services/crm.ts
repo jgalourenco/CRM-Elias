@@ -9,6 +9,7 @@ import {
   Prospeccao,
   MedXImportacao,
   Usuario,
+  Nota,
 } from '@/types/crm'
 
 export const pacientesService = {
@@ -163,6 +164,25 @@ export const medxImportacoesService = {
   },
   async create(data: Partial<MedXImportacao>) {
     return await pb.collection('medx_importacoes').create<MedXImportacao>(data)
+  },
+}
+
+export const notasService = {
+  async list(filter = '', sort = 'data') {
+    return await pb.collection('notas').getFullList<Nota>({
+      filter,
+      sort,
+      expand: 'usuario_id',
+    })
+  },
+  async create(data: Partial<Nota>) {
+    return await pb.collection('notas').create<Nota>(data)
+  },
+  async update(id: string, data: Partial<Nota>) {
+    return await pb.collection('notas').update<Nota>(id, data)
+  },
+  async delete(id: string) {
+    return await pb.collection('notas').delete(id)
   },
 }
 
