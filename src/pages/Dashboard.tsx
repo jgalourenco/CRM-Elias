@@ -258,6 +258,14 @@ export default function Dashboard() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            onClick={() => navigate('/indicadores')}
+            className="rounded-xl border-[#166A5A]/30 text-[#166A5A] hover:bg-[#E2F0EB] text-xs font-semibold gap-1.5 bg-[#E2F0EB]/30"
+          >
+            <TrendingUp className="h-3.5 w-3.5" />
+            Indicadores & Insights
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => navigate('/automacao/regua')}
             className="rounded-xl border-[#E3E7E5] text-xs font-semibold gap-1.5"
           >

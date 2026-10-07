@@ -25,6 +25,7 @@ import {
   ChevronRight,
   ShieldAlert,
   Sparkles,
+  TrendingUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -206,9 +207,15 @@ export default function Layout() {
         {/* Seção Vendas */}
         <div>
           <p className="px-3 text-xs font-semibold uppercase tracking-wider text-[#667C78]/80 mb-2">
-            Vendas & Pipeline
+            Vendas & Indicadores
           </p>
           <nav className="space-y-1">
+            <NavLink to="/indicadores" className={navItemClass}>
+              <div className="flex items-center gap-3">
+                <TrendingUp className="h-4 w-4 text-[#166A5A]" />
+                <span>Indicadores / Insights</span>
+              </div>
+            </NavLink>
             <NavLink to="/funil" className={navItemClass}>
               <div className="flex items-center gap-3">
                 <Filter className="h-4 w-4" />

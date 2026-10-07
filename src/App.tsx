@@ -17,6 +17,7 @@ import FichaPaciente from '@/pages/pacientes/FichaPaciente'
 import Agendas from '@/pages/agendas/Agendas'
 import FunilKanban from '@/pages/vendas/FunilKanban'
 import ProspeccaoList from '@/pages/vendas/ProspeccaoList'
+import Indicadores from '@/pages/vendas/Indicadores'
 import ReguaAtendimento from '@/pages/automacao/ReguaAtendimento'
 import WhatsAppSimulada from '@/pages/automacao/WhatsAppSimulada'
 import EmailSimulada from '@/pages/automacao/EmailSimulada'
@@ -53,6 +54,7 @@ export default function App() {
             {/* Vendas */}
             <Route path="/funil" element={<FunilKanban />} />
             <Route path="/prospeccao" element={<ProspeccaoList />} />
+            <Route path="/indicadores" element={<Indicadores />} />
 
             {/* Automação */}
             <Route path="/automacao/regua" element={<ReguaAtendimento />} />

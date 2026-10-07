@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T19:54:07.346Z",
+  "generatedAt": "2026-10-07T20:29:19.353Z",
   "collections": [
     {
       "name": "users",
@@ -29,21 +29,30 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "papel",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["Administrador", "Recepção", "Financeiro"]
+          "selectValues": [
+            "Administrador",
+            "Recepção",
+            "Financeiro"
+          ]
         }
       ],
       "indexes": [
@@ -73,7 +82,10 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["APP", "APP_AV"]
+          "selectValues": [
+            "APP",
+            "APP_AV"
+          ]
         },
         {
           "name": "quantidade_aplicacoes",
@@ -104,14 +116,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": []
@@ -150,7 +167,11 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["Feminino", "Masculino", "Outro"]
+          "selectValues": [
+            "Feminino",
+            "Masculino",
+            "Outro"
+          ]
         },
         {
           "name": "telefone",
@@ -256,14 +277,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "id_cliente",
@@ -290,7 +316,9 @@
           "system": false
         }
       ],
-      "indexes": ["CREATE INDEX idx_pacientes_fase ON pacientes (fase)"]
+      "indexes": [
+        "CREATE INDEX idx_pacientes_fase ON pacientes (fase)"
+      ]
     },
     {
       "name": "prospeccoes",
@@ -315,14 +343,24 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["WhatsApp", "Instagram", "Telefone", "Email", "Indicacao"]
+          "selectValues": [
+            "WhatsApp",
+            "Instagram",
+            "Telefone",
+            "Email",
+            "Indicacao"
+          ]
         },
         {
           "name": "prioridade",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["alta", "media", "baixa"]
+          "selectValues": [
+            "alta",
+            "media",
+            "baixa"
+          ]
         },
         {
           "name": "etapa",
@@ -354,14 +392,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -439,14 +482,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "hora_chegada",
@@ -523,7 +571,11 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["Pago", "Pendente", "Cancelado"]
+          "selectValues": [
+            "Pago",
+            "Pendente",
+            "Cancelado"
+          ]
         },
         {
           "name": "data",
@@ -536,14 +588,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -605,14 +662,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": []
@@ -640,14 +702,20 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["WhatsApp", "Email"]
+          "selectValues": [
+            "WhatsApp",
+            "Email"
+          ]
         },
         {
           "name": "direcao",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["entrada", "saida"]
+          "selectValues": [
+            "entrada",
+            "saida"
+          ]
         },
         {
           "name": "template",
@@ -666,7 +734,11 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["enviada", "pendente", "falhou"]
+          "selectValues": [
+            "enviada",
+            "pendente",
+            "falhou"
+          ]
         },
         {
           "name": "lida",
@@ -685,14 +757,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -741,7 +818,10 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["WhatsApp", "Email"]
+          "selectValues": [
+            "WhatsApp",
+            "Email"
+          ]
         },
         {
           "name": "template",
@@ -772,14 +852,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": []
@@ -825,20 +910,122 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
         "CREATE INDEX idx_notas_usuario ON notas (usuario_id)",
         "CREATE INDEX idx_notas_data ON notas (data)",
         "CREATE INDEX idx_notas_concluido ON notas (concluido)"
+      ]
+    },
+    {
+      "name": "exames_laboratoriais",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": "",
+        "update": "",
+        "delete": ""
+      },
+      "fields": [
+        {
+          "name": "paciente_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "pacientes"
+        },
+        {
+          "name": "data",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "nome_exame",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "resultado",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "unidade",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "valor_referencia",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Normal",
+            "Alterado",
+            "Atenção"
+          ]
+        },
+        {
+          "name": "laboratorio",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "observacoes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_exames_paciente ON exames_laboratoriais (paciente_id)",
+        "CREATE INDEX idx_exames_data ON exames_laboratoriais (data)",
+        "CREATE INDEX idx_exames_status ON exames_laboratoriais (status)"
       ]
     }
   ]

@@ -28,7 +28,9 @@ import {
   Calendar,
   Sparkles,
   DollarSign,
+  Send,
 } from 'lucide-react'
+import EnviarMensagemAvulsaModal from '@/components/pacientes/EnviarMensagemAvulsaModal'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,6 +66,7 @@ export default function Pacientes() {
   const [modalNovo, setModalNovo] = useState(false)
   const [pacienteEditando, setPacienteEditando] = useState<Paciente | null>(null)
   const [pacienteExcluir, setPacienteExcluir] = useState<Paciente | null>(null)
+  const [pacienteMensagemAvulsa, setPacienteMensagemAvulsa] = useState<Paciente | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
@@ -419,6 +422,15 @@ export default function Pacientes() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-[#667C78] hover:text-[#166A5A] hover:bg-[#E2F0EB]"
+                            title="Enviar Mensagem"
+                            onClick={() => setPacienteMensagemAvulsa(pac)}
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-[#667C78] hover:text-[#166A5A] hover:bg-[#E2F0EB]"
                             title="Ver Ficha"
                             onClick={() => navigate(`/pacientes/${pac.id}`)}
                           >
@@ -488,6 +500,16 @@ export default function Pacientes() {
           </div>
         )}
       </Card>
+
+      {/* Modal Enviar Mensagem Avulsa a partir da lista */}
+      {pacienteMensagemAvulsa && (
+        <EnviarMensagemAvulsaModal
+          open={!!pacienteMensagemAvulsa}
+          onClose={() => setPacienteMensagemAvulsa(null)}
+          paciente={pacienteMensagemAvulsa}
+          onSuccess={fetchData}
+        />
+      )}
 
       {/* Modal Editar / Novo */}
       <NovoPacienteModal

@@ -10,6 +10,7 @@ import {
   MedXImportacao,
   Usuario,
   Nota,
+  ExameLaboratorial,
 } from '@/types/crm'
 
 export const pacientesService = {
@@ -183,6 +184,30 @@ export const notasService = {
   },
   async delete(id: string) {
     return await pb.collection('notas').delete(id)
+  },
+}
+
+export const examesService = {
+  async list(filter = '', sort = '-data') {
+    return await pb.collection('exames_laboratoriais').getFullList<ExameLaboratorial>({
+      filter,
+      sort,
+      expand: 'paciente_id',
+    })
+  },
+  async getById(id: string) {
+    return await pb.collection('exames_laboratoriais').getOne<ExameLaboratorial>(id, {
+      expand: 'paciente_id',
+    })
+  },
+  async create(data: Partial<ExameLaboratorial>) {
+    return await pb.collection('exames_laboratoriais').create<ExameLaboratorial>(data)
+  },
+  async update(id: string, data: Partial<ExameLaboratorial>) {
+    return await pb.collection('exames_laboratoriais').update<ExameLaboratorial>(id, data)
+  },
+  async delete(id: string) {
+    return await pb.collection('exames_laboratoriais').delete(id)
   },
 }
 

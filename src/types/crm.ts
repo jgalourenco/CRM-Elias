@@ -149,6 +149,26 @@ export interface Atendimento {
   }
 }
 
+export type StatusExame = 'Normal' | 'Alterado' | 'Atenção'
+
+export interface ExameLaboratorial {
+  id: string
+  paciente_id: string
+  data: string
+  nome_exame: string
+  resultado: string
+  unidade?: string
+  valor_referencia?: string
+  status?: StatusExame
+  laboratorio?: string
+  observacoes?: string
+  created: string
+  updated: string
+  expand?: {
+    paciente_id?: Paciente
+  }
+}
+
 export interface Nota {
   id: string
   usuario_id?: string

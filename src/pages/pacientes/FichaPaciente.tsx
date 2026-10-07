@@ -7,6 +7,7 @@ import {
   prospeccoesService,
   mensagensService,
   pacotesService,
+  examesService,
   dispatchAutomacao,
 } from '@/services/crm'
 import {
@@ -16,12 +17,15 @@ import {
   Prospeccao,
   Mensagem,
   Pacote,
+  ExameLaboratorial,
   TipoAtendimento,
   TipoLancamento,
   StatusLancamento,
   EtapaProspeccao,
   FasePaciente,
 } from '@/types/crm'
+import ExamesPacienteTab from '@/components/pacientes/ExamesPacienteTab'
+import EnviarMensagemAvulsaModal from '@/components/pacientes/EnviarMensagemAvulsaModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -86,6 +90,7 @@ export default function FichaPaciente() {
   const [prospeccao, setProspeccao] = useState<Prospeccao | null>(null)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
   const [pacotes, setPacotes] = useState<Pacote[]>([])
+  const [exames, setExames] = useState<ExameLaboratorial[]>([])
   const [loading, setLoading] = useState(true)
 
   // Tab State
@@ -96,6 +101,7 @@ export default function FichaPaciente() {
   const [modalNovoAtendimento, setModalNovoAtendimento] = useState(false)
   const [modalNovoLancamento, setModalNovoLancamento] = useState(false)
   const [modalAssociarPacote, setModalAssociarPacote] = useState(false)
+  const [modalMensagemAvulsa, setModalMensagemAvulsa] = useState(false)
 
   // Anamnese Form State
   const [comoChegou, setComoChegou] = useState('')
@@ -129,13 +135,14 @@ export default function FichaPaciente() {
   const loadData = async () => {
     if (!id) return
     try {
-      const [pacRes, atRes, lancRes, prospRes, msgRes, pacotesRes] = await Promise.all([
+      const [pacRes, atRes, lancRes, prospRes, msgRes, pacotesRes, examesRes] = await Promise.all([
         pacientesService.getById(id),
         atendimentosService.list(`paciente_id = "${id}"`, '-data_hora'),
         lancamentosService.list(`paciente_id = "${id}"`, '-data'),
         prospeccoesService.list(`paciente_id = "${id}"`),
         mensagensService.list(`paciente_id = "${id}"`, 'created'),
         pacotesService.list(),
+        examesService.list(`paciente_id = "${id}"`, '-data'),
       ])
 
       setPaciente(pacRes)
@@ -144,6 +151,7 @@ export default function FichaPaciente() {
       setProspeccao(prospRes[0] || null)
       setMensagens(msgRes)
       setPacotes(pacotesRes)
+      setExames(examesRes)
 
       // Preencher campos de Anamnese
       if (pacRes.anamnese) {
@@ -644,6 +652,14 @@ export default function FichaPaciente() {
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
+              onClick={() => setModalMensagemAvulsa(true)}
+              className="rounded-xl border-[#166A5A]/30 text-[#166A5A] hover:bg-[#E2F0EB] text-xs font-semibold gap-1.5 bg-[#E2F0EB]/30"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Enviar Mensagem
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setModalEditarPaciente(true)}
               className="rounded-xl border-[#E3E7E5] text-xs font-semibold gap-1.5"
             >
@@ -671,12 +687,18 @@ export default function FichaPaciente() {
 
       {/* Tabs da Ficha */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-white border border-[#E3E7E5] p-1 rounded-2xl w-full grid grid-cols-2 sm:grid-cols-5 gap-1">
+        <TabsList className="bg-white border border-[#E3E7E5] p-1 rounded-2xl w-full grid grid-cols-2 sm:grid-cols-6 gap-1">
           <TabsTrigger
             value="visao-geral"
             className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white"
           >
             Visão Geral & Anamnese
+          </TabsTrigger>
+          <TabsTrigger
+            value="exames"
+            className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white"
+          >
+            Exames ({exames.length})
           </TabsTrigger>
           <TabsTrigger
             value="atendimentos"
@@ -703,9 +725,9 @@ export default function FichaPaciente() {
             Caixa de Conversas ({mensagens.length})
           </TabsTrigger>
         </TabsList>
-
         {/* 1. VISÃO GERAL & ANAMNESE */}
         <TabsContent value="visao-geral" className="space-y-6 pt-4">
+          {' '}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Form Anamnese (2 colunas) */}
             <Card className="lg:col-span-2 rounded-2xl border-[#E3E7E5] bg-white shadow-xs">
@@ -946,8 +968,20 @@ export default function FichaPaciente() {
           </div>
         </TabsContent>
 
+        {/* ABA EXAMES (Novo módulo inspirado no MedX) */}
+        <TabsContent value="exames" className="space-y-4 pt-4">
+          <ExamesPacienteTab
+            pacienteId={paciente.id}
+            pacienteNome={paciente.nome}
+            pacienteSexo={paciente.sexo}
+            exames={exames}
+            onReload={loadData}
+          />
+        </TabsContent>
+
         {/* 2. ATENDIMENTOS */}
         <TabsContent value="atendimentos" className="space-y-4 pt-4">
+          {' '}
           <Card className="rounded-2xl border-[#E3E7E5] bg-white shadow-xs overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
@@ -1313,6 +1347,16 @@ export default function FichaPaciente() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modal Enviar Mensagem Avulsa (MedX) */}
+      {paciente && (
+        <EnviarMensagemAvulsaModal
+          open={modalMensagemAvulsa}
+          onClose={() => setModalMensagemAvulsa(false)}
+          paciente={paciente}
+          onSuccess={loadData}
+        />
+      )}
 
       {/* Modal Editar Paciente */}
       <NovoPacienteModal
