@@ -258,7 +258,7 @@ Dois tipos na UI:
 
 Quando `loginunificado/verificaCelularLoginUnificado` retorna falso:
 
-1. Celular + cargo (`adm/getListaCargos`) + até 3 especialidades (`adm/getListaEspecialidade`) se médico
+1. Celular + cargo (`adm/getlistaCargos`) + até 3 especialidades (`adm/getListaEspecialidade`) se médico
 2. `PUT hoje/UpdateCargo`
 3. SMS: `loginunificado/solicitaCodigoAutenticacaoDoisFatores?celular=`
 4. Confirma: `POST loginunificado/confirmarCodigo2fa`
@@ -387,7 +387,7 @@ flowchart TD
 
 ## 11. Observações operacionais e de produto
 
-1. **Hoje é a “home” clínica/recepção** no legado care-app65; o SPA novo (`care-app.medx.med.br/app/...`) convive, mas esta tela continua sendo o centro da operação diária no Front Desk.
+1. **Hoje é a “home” clínica/recepção** no legado care-app65; o SPA novel (`care-app.medx.med.br/app/...`) convive, mas esta tela continua sendo o centro da operação diária no Front Desk.
 2. **Iniciar consulta** é o elo formal entre **agenda** e **prontuário** (status 10 + redirect).
 3. **Notas** são lembretes por usuário (não confundir com histórico clínico do prontuário).
 4. **Dexie** protege texto digitado no prontuário que não chegou ao servidor — Hoje é o ponto de recuperação.

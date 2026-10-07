@@ -1,3 +1,4 @@
-src/assets/hoje-72d5d.html
-src/assets/exames-732c1.html
-src/assets/tela-hoje-front-desk-1f92e.md
+dist
+node_modules
+pocketbase
+docs
