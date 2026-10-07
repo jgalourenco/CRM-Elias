@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T20:29:19.353Z",
+  "generatedAt": "2026-10-07T20:57:43.402Z",
   "collections": [
     {
       "name": "users",
@@ -53,6 +53,30 @@
             "Recepção",
             "Financeiro"
           ]
+        },
+        {
+          "name": "mfa_enabled",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "mfa_configured_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "mfa_failed_attempts",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "mfa_locked_until",
+          "type": "date",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [

@@ -16,6 +16,7 @@ import {
 import { User, Lock, Mail, Camera, ShieldCheck, Sparkles } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import pb from '@/lib/pocketbase/client'
+import { TwoFactorConfigCard } from '@/components/mfa/TwoFactorConfigCard'
 
 export default function MinhaConta() {
   const { user, refreshUser } = useAuth()
@@ -304,6 +305,9 @@ export default function MinhaConta() {
           </form>
         </Card>
       </div>
+
+      {/* Card 3: Autenticação em Dois Fatores (2FA / MFA) */}
+      <TwoFactorConfigCard />
 
       {/* Modal Solicitar Alteração de E-mail */}
       <Dialog open={modalEmail} onOpenChange={setModalEmail}>

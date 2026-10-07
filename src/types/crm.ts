@@ -233,8 +233,37 @@ export interface Usuario {
   name: string
   avatar?: string
   papel?: 'Administrador' | 'Recepção' | 'Financeiro'
+  mfa_enabled?: boolean
+  mfa_configured_at?: string
   created: string
   updated: string
+}
+
+export interface MfaStatusResponse {
+  enabled: boolean
+  configuredAt: string | null
+  recoveryCodesRemaining: number
+  recoveryCodesTotal: number
+  hasPendingSetup: boolean
+}
+
+export interface MfaSetupResponse {
+  secret: string
+  otpauthUrl: string
+  recoveryCodes: string[]
+  issuer: string
+  account: string
+}
+
+export interface MfaChallengeData {
+  requiresTwoFactor: true
+  challengeToken: string
+  mfaType: 'totp'
+  user: {
+    id: string
+    email: string
+    name: string
+  }
 }
 
 export interface MedXImportacao {
