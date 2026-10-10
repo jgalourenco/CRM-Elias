@@ -73,6 +73,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (authData.record && authData.token) {
       setUser(authData.record)
       setToken(authData.token)
+      return {
+        user: authData.record,
+      }
     }
   }
 

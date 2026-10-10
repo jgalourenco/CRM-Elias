@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-10T11:04:15.974Z",
+  "generatedAt": "2026-10-10T12:56:36.877Z",
   "collections": [
     {
       "name": "users",
@@ -8,7 +8,7 @@
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != '' && @request.auth.papel = 'Administrador'",
-        "update": "@request.auth.id != '' && (@request.auth.papel = 'Administrador' || (id = @request.auth.id && @request.body.papel:changed = false && @request.body.ativo:changed = false))",
+        "update": "@request.auth.id != '' && (@request.auth.papel = 'Administrador' || (id = @request.auth.id && @request.body.papel:changed = false && @request.body.ativo:changed = false && @request.body.precisa_trocar_senha:changed = false))",
         "delete": "@request.auth.id != '' && @request.auth.papel = 'Administrador'"
       },
       "fields": [
@@ -50,6 +50,9 @@
           "system": false,
           "selectValues": [
             "Administrador",
+            "Gestor",
+            "Profissional",
+            "Visitante",
             "Gestor/Recepção",
             "Profissional/Saúde",
             "Visualização",
@@ -83,6 +86,12 @@
         },
         {
           "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "precisa_trocar_senha",
           "type": "bool",
           "required": false,
           "system": false

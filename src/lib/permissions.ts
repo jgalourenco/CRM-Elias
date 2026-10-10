@@ -15,10 +15,14 @@ export interface RolePermissions {
   canAccessImportacoes: boolean
   canAccessEquipe: boolean
 
+  // Gestão de Usuários (Apenas Administrador)
+  canManageUsers: boolean
+  canResetPasswords: boolean
+
   // Automação & Régua
   canEditRegua: boolean
 
-  // Write permissions
+  // Write permissions operacionais
   canCreatePaciente: boolean
   canEditPaciente: boolean
   canDeletePaciente: boolean
@@ -31,24 +35,29 @@ export interface RolePermissions {
 }
 
 /**
- * Normaliza papel legado ou nulo para os novos papéis
+ * Normaliza papel legado ou nulo para os 4 perfis oficiais do CRM:
+ * - Administrador
+ * - Gestor
+ * - Profissional
+ * - Visitante
  */
 export function normalizeRole(role?: string): UserRole {
-  if (!role) return 'Visualização'
+  if (!role) return 'Visitante'
   if (role === 'Administrador') return 'Administrador'
-  if (role === 'Gestor/Recepção' || role === 'Recepção') return 'Gestor/Recepção'
-  if (role === 'Profissional/Saúde') return 'Profissional/Saúde'
-  if (role === 'Visualização') return 'Visualização'
+  if (role === 'Gestor' || role === 'Gestor/Recepção' || role === 'Recepção') return 'Gestor'
+  if (role === 'Profissional' || role === 'Profissional/Saúde') return 'Profissional'
+  if (role === 'Visitante' || role === 'Visualização') return 'Visitante'
   if (role === 'Financeiro') return 'Administrador' // legado financeiro mapeado para admin
-  return 'Visualização'
+  return 'Visitante'
 }
 
 /**
- * Retorna as permissões para um determinado papel:
- * - Administrador: acesso total, equipe, configurações, financeiro, tudo
- * - Gestor/Recepção: pacientes, agenda, funil, prospecção, régua, mensagens, importações (sem equipe)
- * - Profissional/Saúde: agenda, pacientes/fichas, exames, mensagens simuladas (sem funil, sem financeiro, sem configs)
- * - Visualização: somente leitura das telas liberadas (sem botões de escrita)
+ * Retorna as permissões para cada perfil:
+ * - Administrador: acessa tudo, gerencia os demais usuários (cria, altera papéis, redefine senhas, desativa).
+ * - Gestor: acessa todas as áreas da clínica (mesmo alcance de menus do Admin, incluindo pacotes, régua, funil, importações),
+ *           mas NÃO gerencia funções/perfis de outros usuários (não cria, não muda papéis, não reseta senhas).
+ * - Profissional: focado na operação clínica (agenda, pacientes/fichas, exames, notas, mensagens).
+ * - Visitante: somente leitura das telas da equipe + prévia/esboço do Portal do Paciente.
  */
 export function getPermissions(role?: string): RolePermissions {
   const norm = normalizeRole(role)
@@ -68,6 +77,9 @@ export function getPermissions(role?: string): RolePermissions {
       canAccessImportacoes: true,
       canAccessEquipe: true,
 
+      canManageUsers: true,
+      canResetPasswords: true,
+
       canEditRegua: true,
 
       canCreatePaciente: true,
@@ -82,8 +94,9 @@ export function getPermissions(role?: string): RolePermissions {
     }
   }
 
-  if (norm === 'Gestor/Recepção') {
+  if (norm === 'Gestor') {
     return {
+      // Gestor tem o mesmo alcance de menus/rotas da clínica que o Administrador
       canAccessDashboard: true,
       canAccessPacientes: true,
       canAccessAgendas: true,
@@ -93,9 +106,13 @@ export function getPermissions(role?: string): RolePermissions {
       canAccessProspeccao: true,
       canAccessIndicadores: true,
       canAccessRegua: true,
-      canAccessPacotesConfig: false,
+      canAccessPacotesConfig: true,
       canAccessImportacoes: true,
-      canAccessEquipe: false,
+      // Gestor pode ver a equipe, mas NÃO edita funções nem senhas (somente visualiza membros)
+      canAccessEquipe: true,
+
+      canManageUsers: false,
+      canResetPasswords: false,
 
       canEditRegua: true,
 
@@ -111,7 +128,7 @@ export function getPermissions(role?: string): RolePermissions {
     }
   }
 
-  if (norm === 'Profissional/Saúde') {
+  if (norm === 'Profissional') {
     return {
       canAccessDashboard: true,
       canAccessPacientes: true,
@@ -125,6 +142,9 @@ export function getPermissions(role?: string): RolePermissions {
       canAccessPacotesConfig: false,
       canAccessImportacoes: false,
       canAccessEquipe: false,
+
+      canManageUsers: false,
+      canResetPasswords: false,
 
       canEditRegua: false,
 
@@ -140,7 +160,7 @@ export function getPermissions(role?: string): RolePermissions {
     }
   }
 
-  // Visualização (somente leitura)
+  // Visitante (somente leitura operacional)
   return {
     canAccessDashboard: true,
     canAccessPacientes: true,
@@ -154,6 +174,9 @@ export function getPermissions(role?: string): RolePermissions {
     canAccessPacotesConfig: false,
     canAccessImportacoes: false,
     canAccessEquipe: false,
+
+    canManageUsers: false,
+    canResetPasswords: false,
 
     canEditRegua: false,
 
@@ -170,10 +193,25 @@ export function getPermissions(role?: string): RolePermissions {
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  Administrador: 'Administrador (Acesso total)',
-  'Gestor/Recepção': 'Gestor / Recepção',
-  'Profissional/Saúde': 'Profissional de Saúde',
-  Visualização: 'Visualização (Somente leitura)',
-  Recepção: 'Gestor / Recepção',
-  Financeiro: 'Administrador',
+  Administrador: 'Administrador (Acesso e Gestão Total)',
+  Gestor: 'Gestor (Acesso a todas as áreas • Sem gestão de usuários)',
+  Profissional: 'Profissional (Agenda, Fichas Clínicas e Exames)',
+  Visitante: 'Visitante (Somente Leitura • Futuro Portal do Paciente)',
+  // Sinônimos e legados para compatibilidade
+  'Gestor/Recepção': 'Gestor (Acesso a todas as áreas • Sem gestão de usuários)',
+  'Profissional/Saúde': 'Profissional (Agenda, Fichas Clínicas e Exames)',
+  Visualização: 'Visitante (Somente Leitura • Futuro Portal do Paciente)',
+  Recepção: 'Gestor (Acesso a todas as áreas • Sem gestão de usuários)',
+  Financeiro: 'Administrador (Acesso e Gestão Total)',
+}
+
+export const ROLE_DESCRIPTIONS: Record<string, string> = {
+  Administrador:
+    'Acesso irrestrito a todas as áreas clínicas, operacionais e de gestão. É o único perfil autorizado a criar e remover colaboradores, alterar perfis e definir ou disparar senhas de acesso.',
+  Gestor:
+    'Acesso completo a todas as áreas da clínica (dashboards, pacientes, agendas, funil, régua, indicadores, pacotes e importações). Por diretriz de segurança, NÃO edita papéis de outros usuários, não cria contas, não desativa membros nem altera senhas.',
+  Profissional:
+    'Perfil dedicado a médicos e profissionais assistenciais. Acesso a agendas, prontuários de pacientes, visualização/registro de exames laboratoriais, notas clínicas e mensagens.',
+  Visitante:
+    'Modo de consulta com permissões somente leitura para auditoria da equipe. Servirá de base para o futuro Portal do Paciente.',
 }

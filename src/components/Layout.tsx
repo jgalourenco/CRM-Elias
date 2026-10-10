@@ -29,6 +29,7 @@ import {
   Sparkles,
   TrendingUp,
   FileBarChart,
+  UserCheck,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
@@ -118,6 +119,16 @@ export default function Layout() {
 
   // Novo Paciente modal state
   const [modalNovoPaciente, setModalNovoPaciente] = useState(false)
+
+  // Trava de Primeiro Acesso Obrigatório: se o usuário precisa trocar a senha,
+  // não pode navegar por nenhuma rota operacional do sistema
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user?.precisa_trocar_senha) {
+      if (location.pathname !== '/primeiro-acesso') {
+        navigate('/primeiro-acesso', { replace: true })
+      }
+    }
+  }, [isAuthenticated, isLoading, user?.precisa_trocar_senha, location.pathname, navigate])
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -673,11 +684,19 @@ export default function Layout() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => navigate('/config/conta')}
-                    className="cursor-pointer py-2 gap-2"
+                    onClick={() => navigate('/config/minha-conta')}
+                    className="text-xs cursor-pointer"
                   >
-                    <User className="h-4 w-4 text-[#667C78]" />
+                    <UserCheck className="mr-2 h-4 w-4" />
                     <span>Minha Conta</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => window.open('/portal-paciente', '_blank')}
+                    className="text-xs cursor-pointer text-[#166A5A]"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4 text-[#C9A227]" />
+                    <span>Portal do Paciente (Esboço)</span>
                   </DropdownMenuItem>
                   {permissions.canAccessPacotesConfig && (
                     <DropdownMenuItem

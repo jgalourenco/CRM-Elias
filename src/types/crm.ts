@@ -232,6 +232,9 @@ export interface Automacao {
 
 export type UserRole =
   | 'Administrador'
+  | 'Gestor'
+  | 'Profissional'
+  | 'Visitante'
   | 'Gestor/Recepção'
   | 'Profissional/Saúde'
   | 'Visualização'
@@ -245,6 +248,7 @@ export interface Usuario {
   avatar?: string
   papel?: UserRole
   ativo?: boolean
+  precisa_trocar_senha?: boolean
   mfa_enabled?: boolean
   mfa_configured_at?: string
   created: string

@@ -170,12 +170,21 @@ export const usuariosService = {
   async delete(id: string) {
     return await pb.collection('users').delete(id)
   },
-  async adminResetPassword(userId: string, newPassword: string) {
-    return await pb.send<{ success: boolean; message: string }>(
+  async adminResetPassword(userId: string, newPassword: string, precisaTrocarSenha = true) {
+    return await pb.send<{ success: boolean; message: string; precisa_trocar_senha?: boolean }>(
       '/backend/v1/admin/reset-password',
       {
         method: 'POST',
-        body: { userId, newPassword },
+        body: { userId, newPassword, precisaTrocarSenha },
+      },
+    )
+  },
+  async trocarSenhaPrimeiroAcesso(currentPassword: string, newPassword: string) {
+    return await pb.send<{ success: boolean; message: string; user?: Usuario }>(
+      '/backend/v1/auth/primeiro-acesso',
+      {
+        method: 'POST',
+        body: { currentPassword, newPassword },
       },
     )
   },

@@ -334,6 +334,7 @@ routerAdd('POST', '/backend/v1/mfa/verify', (e) => {
       name: userRecord.getString('name'),
       avatar: userRecord.getString('avatar'),
       papel: userRecord.getString('papel'),
+      precisa_trocar_senha: userRecord.getBool('precisa_trocar_senha'),
       mfa_enabled: true,
       created: userRecord.getString('created'),
       updated: userRecord.getString('updated'),

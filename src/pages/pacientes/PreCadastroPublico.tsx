@@ -29,10 +29,19 @@ export default function PreCadastroPublico() {
   const [telefone, setTelefone] = useState('')
   const [email, setEmail] = useState('')
   const [dataNascimento, setDataNascimento] = useState('')
-  const [sexo, setSexo] = useState<Sexo>('Outro')
+  const [sexo, setSexo] = useState<Sexo | ''>('')
   const [comoConheceu, setComoConheceu] = useState('')
   const [queixaPrincipal, setQueixaPrincipal] = useState('')
   const [observacoes, setObservacoes] = useState('')
+
+  // Erros por campo individual
+  const [erros, setErros] = useState<{
+    nome?: string
+    dataNascimento?: string
+    sexo?: string
+    comoConheceu?: string
+    telefone?: string
+  }>({})
 
   const [loading, setLoading] = useState(false)
   const [sucesso, setSucesso] = useState(false)
@@ -45,12 +54,61 @@ export default function PreCadastroPublico() {
     return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`
   }
 
+  const validarCampos = () => {
+    const novosErros: {
+      nome?: string
+      dataNascimento?: string
+      sexo?: string
+      comoConheceu?: string
+      telefone?: string
+    } = {}
+
+    // 1. Nome completo obrigatório (pelo menos duas palavras)
+    const nomeLimpo = nome.trim()
+    if (!nomeLimpo) {
+      novosErros.nome = 'O nome completo é obrigatório.'
+    } else if (nomeLimpo.split(/\s+/).length < 2) {
+      novosErros.nome = 'Por favor, informe seu nome e sobrenome.'
+    }
+
+    // 2. Data de nascimento obrigatória
+    if (!dataNascimento.trim()) {
+      novosErros.dataNascimento = 'A data de nascimento é obrigatória.'
+    } else {
+      const dt = new Date(dataNascimento)
+      const agora = new Date()
+      if (isNaN(dt.getTime())) {
+        novosErros.dataNascimento = 'Data de nascimento inválida.'
+      } else if (dt > agora) {
+        novosErros.dataNascimento = 'A data não pode ser futura.'
+      }
+    }
+
+    // 3. Sexo obrigatório
+    if (!sexo) {
+      novosErros.sexo = 'Por favor, selecione seu sexo biológico / identificação.'
+    }
+
+    // 4. Como conheceu a clínica obrigatório
+    if (!comoConheceu.trim()) {
+      novosErros.comoConheceu = 'Por favor, informe como você conheceu a Clínica Elias Mansur.'
+    }
+
+    // Telefone continua sendo importante para contato
+    if (telefone.replace(/\D/g, '').length < 10) {
+      novosErros.telefone = 'Informe um WhatsApp com DDD válido (ex: 11 98765-4321).'
+    }
+
+    setErros(novosErros)
+    return Object.keys(novosErros).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErroMsg('')
 
-    if (!nome.trim() || !telefone.trim()) {
-      setErroMsg('Por favor, preencha ao menos seu nome completo e telefone WhatsApp.')
+    if (!validarCampos()) {
+      setErroMsg('Por favor, corrija os campos destacados em vermelho antes de enviar.')
       return
     }
 
@@ -142,9 +200,12 @@ export default function PreCadastroPublico() {
               setTelefone('')
               setEmail('')
               setDataNascimento('')
+              setSexo('')
               setQueixaPrincipal('')
               setComoConheceu('')
               setObservacoes('')
+              setErros({})
+              setErroMsg('')
               setSucesso(false)
             }}
             variant="outline"
@@ -193,38 +254,58 @@ export default function PreCadastroPublico() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Nome Completo */}
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            {/* Nome Completo (OBRIGATÓRIO) */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1C2B29]">
-                Nome Completo <span className="text-red-500">*</span>
+              <Label className="text-xs font-semibold text-[#1C2B29] flex items-center justify-between">
+                <span>
+                  Nome Completo <span className="text-red-500">*</span>
+                </span>
+                {erros.nome && (
+                  <span className="text-[11px] font-normal text-red-500">{erros.nome}</span>
+                )}
               </Label>
               <Input
-                required
                 value={nome}
-                onChange={(e) => setNome(e.target.value)}
+                onChange={(e) => {
+                  setNome(e.target.value)
+                  if (erros.nome) setErros((prev) => ({ ...prev, nome: undefined }))
+                }}
                 placeholder="Ex.: Maria da Silva Santos"
-                className="rounded-xl border-[#E3E7E5] h-10 text-sm"
+                className={`rounded-xl h-10 text-sm transition-colors ${
+                  erros.nome
+                    ? 'border-red-400 bg-red-50/30 focus-visible:ring-red-400'
+                    : 'border-[#E3E7E5]'
+                }`}
               />
             </div>
 
             {/* Telefone e E-mail */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1C2B29]">
-                  WhatsApp / Celular <span className="text-red-500">*</span>
+                <Label className="text-xs font-semibold text-[#1C2B29] flex items-center justify-between">
+                  <span>
+                    WhatsApp / Celular <span className="text-red-500">*</span>
+                  </span>
                 </Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667C78]" />
                   <Input
-                    required
                     type="tel"
                     value={telefone}
-                    onChange={(e) => setTelefone(formatTelefone(e.target.value))}
+                    onChange={(e) => {
+                      setTelefone(formatTelefone(e.target.value))
+                      if (erros.telefone) setErros((prev) => ({ ...prev, telefone: undefined }))
+                    }}
                     placeholder="(11) 98765-4321"
-                    className="pl-9 rounded-xl border-[#E3E7E5] h-10 text-sm"
+                    className={`pl-9 rounded-xl h-10 text-sm transition-colors ${
+                      erros.telefone
+                        ? 'border-red-400 bg-red-50/30 focus-visible:ring-red-400'
+                        : 'border-[#E3E7E5]'
+                    }`}
                   />
                 </div>
+                {erros.telefone && <p className="text-[11px] text-red-500">{erros.telefone}</p>}
               </div>
 
               <div className="space-y-1.5">
@@ -242,41 +323,90 @@ export default function PreCadastroPublico() {
               </div>
             </div>
 
-            {/* Data de Nascimento e Sexo */}
+            {/* Data de Nascimento (OBRIGATÓRIO) e Sexo (OBRIGATÓRIO) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1C2B29]">Data de Nascimento</Label>
+                <Label className="text-xs font-semibold text-[#1C2B29] flex items-center justify-between">
+                  <span>
+                    Data de Nascimento <span className="text-red-500">*</span>
+                  </span>
+                </Label>
                 <Input
                   type="date"
                   value={dataNascimento}
-                  onChange={(e) => setDataNascimento(e.target.value)}
-                  className="rounded-xl border-[#E3E7E5] h-10 text-sm"
+                  onChange={(e) => {
+                    setDataNascimento(e.target.value)
+                    if (erros.dataNascimento)
+                      setErros((prev) => ({ ...prev, dataNascimento: undefined }))
+                  }}
+                  className={`rounded-xl h-10 text-sm transition-colors ${
+                    erros.dataNascimento
+                      ? 'border-red-400 bg-red-50/30 focus-visible:ring-red-400'
+                      : 'border-[#E3E7E5]'
+                  }`}
                 />
+                {erros.dataNascimento && (
+                  <p className="text-[11px] text-red-500">{erros.dataNascimento}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1C2B29]">Sexo</Label>
-                <Select value={sexo} onValueChange={(v: Sexo) => setSexo(v)}>
-                  <SelectTrigger className="rounded-xl border-[#E3E7E5] h-10 text-sm">
-                    <SelectValue placeholder="Selecione" />
+                <Label className="text-xs font-semibold text-[#1C2B29] flex items-center justify-between">
+                  <span>
+                    Sexo <span className="text-red-500">*</span>
+                  </span>
+                </Label>
+                <Select
+                  value={sexo}
+                  onValueChange={(v: Sexo) => {
+                    setSexo(v)
+                    if (erros.sexo) setErros((prev) => ({ ...prev, sexo: undefined }))
+                  }}
+                >
+                  <SelectTrigger
+                    className={`rounded-xl h-10 text-sm transition-colors ${
+                      erros.sexo
+                        ? 'border-red-400 bg-red-50/30 focus-visible:ring-red-400'
+                        : 'border-[#E3E7E5]'
+                    }`}
+                  >
+                    <SelectValue placeholder="Selecione o sexo..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Feminino">Feminino</SelectItem>
                     <SelectItem value="Masculino">Masculino</SelectItem>
-                    <SelectItem value="Outro">Prefiro não informar / Outro</SelectItem>
+                    <SelectItem value="Outro">Outro / Prefiro não informar</SelectItem>
                   </SelectContent>
                 </Select>
+                {erros.sexo && <p className="text-[11px] text-red-500">{erros.sexo}</p>}
               </div>
             </div>
 
-            {/* Como conheceu a clínica */}
+            {/* Como conheceu a clínica (OBRIGATÓRIO) */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1C2B29]">
-                Como conheceu a clínica?
+              <Label className="text-xs font-semibold text-[#1C2B29] flex items-center justify-between">
+                <span>
+                  Como conheceu a clínica? <span className="text-red-500">*</span>
+                </span>
+                {erros.comoConheceu && (
+                  <span className="text-[11px] font-normal text-red-500">{erros.comoConheceu}</span>
+                )}
               </Label>
-              <Select value={comoConheceu} onValueChange={setComoConheceu}>
-                <SelectTrigger className="rounded-xl border-[#E3E7E5] h-10 text-sm">
-                  <SelectValue placeholder="Selecione uma opção..." />
+              <Select
+                value={comoConheceu}
+                onValueChange={(v) => {
+                  setComoConheceu(v)
+                  if (erros.comoConheceu) setErros((prev) => ({ ...prev, comoConheceu: undefined }))
+                }}
+              >
+                <SelectTrigger
+                  className={`rounded-xl h-10 text-sm transition-colors ${
+                    erros.comoConheceu
+                      ? 'border-red-400 bg-red-50/30 focus-visible:ring-red-400'
+                      : 'border-[#E3E7E5]'
+                  }`}
+                >
+                  <SelectValue placeholder="Selecione como nos conheceu..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Instagram / Redes Sociais">
@@ -286,9 +416,12 @@ export default function PreCadastroPublico() {
                     Indicação de amigo ou familiar
                   </SelectItem>
                   <SelectItem value="Indicação médica / profissional">
-                    Indicação de outro médico/profissional
+                    Indicação de outro médico ou profissional de saúde
                   </SelectItem>
                   <SelectItem value="Busca no Google / Site">Busca no Google / Site</SelectItem>
+                  <SelectItem value="Passou em frente / Fachada">
+                    Passou em frente / Fachada
+                  </SelectItem>
                   <SelectItem value="Outro">Outro canal</SelectItem>
                 </SelectContent>
               </Select>

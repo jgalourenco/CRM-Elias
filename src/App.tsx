@@ -10,12 +10,14 @@ import Cadastro from '@/pages/auth/Cadastro'
 import EsqueciSenha from '@/pages/auth/EsqueciSenha'
 import RedefinirSenha from '@/pages/auth/RedefinirSenha'
 import VerificarEmail from '@/pages/auth/VerificarEmail'
+import PrimeiroAcesso from '@/pages/auth/PrimeiroAcesso'
 
 // App Pages
 import Dashboard from '@/pages/Dashboard'
 import PacientesList from '@/pages/pacientes/PacientesList'
 import FichaPaciente from '@/pages/pacientes/FichaPaciente'
 import PreCadastroPublico from '@/pages/pacientes/PreCadastroPublico'
+import PortalPaciente from '@/pages/pacientes/PortalPaciente'
 import Agendas from '@/pages/agendas/Agendas'
 import RelatorioAgenda from '@/pages/agendas/RelatorioAgenda'
 import FunilKanban from '@/pages/vendas/FunilKanban'
@@ -41,10 +43,14 @@ export default function App() {
           <Route path="/esqueci-senha" element={<EsqueciSenha />} />
           <Route path="/redefinir-senha" element={<RedefinirSenha />} />
           <Route path="/verificar-email" element={<VerificarEmail />} />
+          <Route path="/primeiro-acesso" element={<PrimeiroAcesso />} />
 
           {/* Public Patient Questionnaire */}
           <Route path="/questionario" element={<PreCadastroPublico />} />
           <Route path="/pre-cadastro" element={<PreCadastroPublico />} />
+
+          {/* Esboço do Portal do Paciente (Perfil Visitante / Visão do Paciente) */}
+          <Route path="/portal-paciente" element={<PortalPaciente />} />
 
           {/* Authenticated Global Layout Routes */}
           <Route element={<Layout />}>

@@ -62,7 +62,11 @@ export default function Login() {
       }
 
       // Login sem 2FA efetuado com sucesso
-      navigate('/dashboard')
+      if (result && result.user && result.user.precisa_trocar_senha) {
+        navigate('/primeiro-acesso', { replace: true })
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'E-mail ou senha inválidos.'
       setError(msg || 'Credenciais inválidas. Verifique seu e-mail e senha.')
@@ -105,7 +109,11 @@ export default function Login() {
       const res = await mfaService.verify(verifyPayload)
       if (res.token && res.record) {
         completeTwoFactorLogin({ token: res.token, record: res.record })
-        navigate('/dashboard')
+        if (res.record.precisa_trocar_senha) {
+          navigate('/primeiro-acesso', { replace: true })
+        } else {
+          navigate('/dashboard')
+        }
       } else {
         setError('Não foi possível concluir a autenticação. Tente novamente.')
       }
