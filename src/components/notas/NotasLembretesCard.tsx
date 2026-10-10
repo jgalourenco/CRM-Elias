@@ -97,6 +97,7 @@ export default function NotasLembretesCard({
   const [filtroStatus, setFiltroStatus] = useState<'todas' | 'pendentes' | 'concluidas'>(
     'pendentes',
   )
+  const [apenasAtrasadas, setApenasAtrasadas] = useState(false)
 
   const abrirNovaNota = () => {
     setModalTitle('Nova Nota')
@@ -155,6 +156,9 @@ export default function NotasLembretesCard({
   )
 
   const notasFiltradas = notasOrdenadas.filter((n) => {
+    if (apenasAtrasadas) {
+      return !n.concluido && classificarDataNota(n.data) === 'atrasadas'
+    }
     if (filtroStatus === 'pendentes') return !n.concluido
     if (filtroStatus === 'concluidas') return !!n.concluido
     return true
@@ -182,9 +186,30 @@ export default function NotasLembretesCard({
               <CardTitle className="text-base font-bold text-[#1C2B29] flex items-center gap-2">
                 Notas & Lembretes
                 {contagemAtrasadas > 0 && (
-                  <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 text-[10px] font-bold px-1.5 py-0 border-rose-200">
-                    {contagemAtrasadas} atrasadas
-                  </Badge>
+                  <button
+                    type="button"
+                    onClick={() => setApenasAtrasadas((prev) => !prev)}
+                    title={
+                      apenasAtrasadas
+                        ? 'Remover filtro de notas atrasadas'
+                        : `Filtrar apenas as ${contagemAtrasadas} notas atrasadas`
+                    }
+                    aria-label={`Notas atrasadas: ${contagemAtrasadas}. Clique para ${
+                      apenasAtrasadas ? 'limpar filtro' : 'filtrar apenas atrasadas'
+                    }`}
+                    aria-pressed={apenasAtrasadas}
+                    className="focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-full"
+                  >
+                    <Badge
+                      className={`text-[10px] font-bold px-1.5 py-0 border transition-all cursor-pointer ${
+                        apenasAtrasadas
+                          ? 'bg-rose-600 text-white border-rose-700 shadow-xs ring-2 ring-rose-200'
+                          : 'bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-200'
+                      }`}
+                    >
+                      {contagemAtrasadas}
+                    </Badge>
+                  </button>
                 )}
               </CardTitle>
             </div>
@@ -207,9 +232,12 @@ export default function NotasLembretesCard({
         <div className="flex items-center justify-between pt-2 text-xs">
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setFiltroStatus('pendentes')}
+              onClick={() => {
+                setApenasAtrasadas(false)
+                setFiltroStatus('pendentes')
+              }}
               className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                filtroStatus === 'pendentes'
+                !apenasAtrasadas && filtroStatus === 'pendentes'
                   ? 'bg-[#166A5A] text-white'
                   : 'text-[#667C78] hover:bg-gray-100'
               }`}
@@ -217,9 +245,12 @@ export default function NotasLembretesCard({
               Pendentes ({notas.filter((n) => !n.concluido).length})
             </button>
             <button
-              onClick={() => setFiltroStatus('todas')}
+              onClick={() => {
+                setApenasAtrasadas(false)
+                setFiltroStatus('todas')
+              }}
               className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                filtroStatus === 'todas'
+                !apenasAtrasadas && filtroStatus === 'todas'
                   ? 'bg-[#166A5A] text-white'
                   : 'text-[#667C78] hover:bg-gray-100'
               }`}
@@ -227,9 +258,12 @@ export default function NotasLembretesCard({
               Todas ({notas.length})
             </button>
             <button
-              onClick={() => setFiltroStatus('concluidas')}
+              onClick={() => {
+                setApenasAtrasadas(false)
+                setFiltroStatus('concluidas')
+              }}
               className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                filtroStatus === 'concluidas'
+                !apenasAtrasadas && filtroStatus === 'concluidas'
                   ? 'bg-[#166A5A] text-white'
                   : 'text-[#667C78] hover:bg-gray-100'
               }`}
