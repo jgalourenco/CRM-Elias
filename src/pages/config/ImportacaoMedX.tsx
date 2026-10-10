@@ -79,13 +79,13 @@ export default function ImportacaoMedX() {
       dataLimite.setDate(dataLimite.getDate() - 30)
       const dataLimiteIso = dataLimite.toISOString().replace('T', ' ').substring(0, 19)
 
-      const lista = await medxImportacoesService.list(`-created`, `created >= "${dataLimiteIso}"`)
+      const lista = await medxImportacoesService.list(`created >= "${dataLimiteIso}"`, '-created')
       setHistorico(lista)
     } catch (err) {
       console.error('Erro ao carregar histórico de importações:', err)
       // fallback sem filtro estrito de data se a regra do banco falhar
       try {
-        const fallback = await medxImportacoesService.list('-created')
+        const fallback = await medxImportacoesService.list('', '-created')
         const trintaDiasAtrasMs = Date.now() - 30 * 24 * 60 * 60 * 1000
         setHistorico(
           fallback.filter((item) => new Date(item.created).getTime() >= trintaDiasAtrasMs),

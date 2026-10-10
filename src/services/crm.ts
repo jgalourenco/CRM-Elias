@@ -167,9 +167,10 @@ export const usuariosService = {
 }
 
 export const medxImportacoesService = {
-  async list() {
+  async list(filter = '', sort = '-created') {
     return await pb.collection('medx_importacoes').getFullList<MedXImportacao>({
-      sort: '-created',
+      filter,
+      sort,
     })
   },
   async create(data: Partial<MedXImportacao>) {

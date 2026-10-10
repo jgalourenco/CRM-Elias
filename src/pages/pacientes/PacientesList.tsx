@@ -43,6 +43,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import NovoPacienteModal from '@/components/pacientes/NovoPacienteModal'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/AuthContext'
+import { getPermissions } from '@/lib/permissions'
 
 export default function Pacientes() {
   const navigate = useNavigate()
@@ -184,12 +186,12 @@ export default function Pacientes() {
         {permissions.canCreatePaciente && (
           <Button
             onClick={() => {
-              setPacienteParaEditar(null)
-              setModalNovoOpen(true)
+              setPacienteEditando(null)
+              setModalNovo(true)
             }}
             className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
           >
-            <UserPlus className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
             Novo Paciente
           </Button>
         )}{' '}
