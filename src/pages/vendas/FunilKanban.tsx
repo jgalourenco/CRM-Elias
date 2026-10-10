@@ -123,17 +123,17 @@ export default function FunilKanban() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1C2B29] tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1C2B29] tracking-tight">
             Funil de Vendas (Kanban)
           </h1>
-          <p className="text-sm text-[#667C78]">
+          <p className="text-xs sm:text-sm text-[#667C78]">
             Pipeline interativo com avanço por arraste e disparo dinâmico de automações da Clínica
             Elias Mansur.
           </p>
         </div>
         <Button
           onClick={() => navigate('/prospeccao')}
-          className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
+          className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm w-full sm:w-auto justify-center"
         >
           <Plus className="h-4 w-4" />
           Nova Prospecção

@@ -285,13 +285,13 @@ export default function Indicadores() {
         </div>
 
         {/* Botões de Filtro de Período */}
-        <div className="flex items-center gap-1.5 p-1 bg-white border border-[#E3E7E5] rounded-2xl shadow-xs self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-white border border-[#E3E7E5] rounded-2xl shadow-xs w-full sm:w-auto justify-around sm:justify-start">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => setPeriodo(7)}
-            className={`rounded-xl text-xs font-semibold px-3 h-8 ${
+            className={`flex-1 sm:flex-initial rounded-xl text-xs font-semibold px-3 h-8 ${
               periodo === 7
                 ? 'bg-[#166A5A] text-white hover:bg-[#166A5A] hover:text-white'
                 : 'text-[#667C78] hover:text-[#1C2B29]'
@@ -304,7 +304,7 @@ export default function Indicadores() {
             variant="ghost"
             size="sm"
             onClick={() => setPeriodo(30)}
-            className={`rounded-xl text-xs font-semibold px-3 h-8 ${
+            className={`flex-1 sm:flex-initial rounded-xl text-xs font-semibold px-3 h-8 ${
               periodo === 30
                 ? 'bg-[#166A5A] text-white hover:bg-[#166A5A] hover:text-white'
                 : 'text-[#667C78] hover:text-[#1C2B29]'
@@ -317,7 +317,7 @@ export default function Indicadores() {
             variant="ghost"
             size="sm"
             onClick={() => setPeriodo(90)}
-            className={`rounded-xl text-xs font-semibold px-3 h-8 ${
+            className={`flex-1 sm:flex-initial rounded-xl text-xs font-semibold px-3 h-8 ${
               periodo === 90
                 ? 'bg-[#166A5A] text-white hover:bg-[#166A5A] hover:text-white'
                 : 'text-[#667C78] hover:text-[#1C2B29]'

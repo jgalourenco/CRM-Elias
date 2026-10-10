@@ -649,11 +649,11 @@ export default function FichaPaciente() {
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
             <Button
               variant="outline"
               onClick={() => setModalMensagemAvulsa(true)}
-              className="rounded-xl border-[#166A5A]/30 text-[#166A5A] hover:bg-[#E2F0EB] text-xs font-semibold gap-1.5 bg-[#E2F0EB]/30"
+              className="flex-1 sm:flex-initial rounded-xl border-[#166A5A]/30 text-[#166A5A] hover:bg-[#E2F0EB] text-xs font-semibold gap-1.5 bg-[#E2F0EB]/30"
             >
               <Send className="h-3.5 w-3.5" />
               Enviar Mensagem
@@ -661,7 +661,7 @@ export default function FichaPaciente() {
             <Button
               variant="outline"
               onClick={() => setModalEditarPaciente(true)}
-              className="rounded-xl border-[#E3E7E5] text-xs font-semibold gap-1.5"
+              className="flex-1 sm:flex-initial rounded-xl border-[#E3E7E5] text-xs font-semibold gap-1.5"
             >
               <Edit className="h-3.5 w-3.5" />
               Editar Cadastro
@@ -669,14 +669,14 @@ export default function FichaPaciente() {
             <Button
               variant="outline"
               onClick={() => setModalNovoLancamento(true)}
-              className="rounded-xl border-[#E3E7E5] text-xs font-semibold gap-1.5"
+              className="flex-1 sm:flex-initial rounded-xl border-[#E3E7E5] text-xs font-semibold gap-1.5"
             >
               <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
               Novo Lançamento
             </Button>
             <Button
               onClick={() => setModalNovoAtendimento(true)}
-              className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
+              className="flex-1 sm:flex-initial bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
             >
               <Calendar className="h-3.5 w-3.5" />
               Agendar Atendimento
@@ -687,44 +687,46 @@ export default function FichaPaciente() {
 
       {/* Tabs da Ficha */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-white border border-[#E3E7E5] p-1 rounded-2xl w-full grid grid-cols-2 sm:grid-cols-6 gap-1">
-          <TabsTrigger
-            value="visao-geral"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white"
-          >
-            Visão Geral & Anamnese
-          </TabsTrigger>
-          <TabsTrigger
-            value="exames"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white"
-          >
-            Exames ({exames.length})
-          </TabsTrigger>
-          <TabsTrigger
-            value="atendimentos"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white"
-          >
-            Atendimentos ({atendimentos.length})
-          </TabsTrigger>
-          <TabsTrigger
-            value="prospeccao"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white"
-          >
-            Funil / Prospecção
-          </TabsTrigger>
-          <TabsTrigger
-            value="faturamento"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white"
-          >
-            Faturamento ({lancamentos.length})
-          </TabsTrigger>
-          <TabsTrigger
-            value="conversas"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white"
-          >
-            Caixa de Conversas ({mensagens.length})
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
+          <TabsList className="bg-white border border-[#E3E7E5] p-1 rounded-2xl w-full flex sm:grid sm:grid-cols-6 gap-1 min-w-[580px] sm:min-w-0">
+            <TabsTrigger
+              value="visao-geral"
+              className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white whitespace-nowrap"
+            >
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger
+              value="exames"
+              className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white whitespace-nowrap"
+            >
+              Exames ({exames.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="atendimentos"
+              className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white whitespace-nowrap"
+            >
+              Atendimentos ({atendimentos.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="prospeccao"
+              className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white whitespace-nowrap"
+            >
+              Funil
+            </TabsTrigger>
+            <TabsTrigger
+              value="faturamento"
+              className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white whitespace-nowrap"
+            >
+              Faturamento ({lancamentos.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="conversas"
+              className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white whitespace-nowrap"
+            >
+              Conversas ({mensagens.length})
+            </TabsTrigger>
+          </TabsList>
+        </div>
         {/* 1. VISÃO GERAL & ANAMNESE */}
         <TabsContent value="visao-geral" className="space-y-6 pt-4">
           {' '}
@@ -732,9 +734,9 @@ export default function FichaPaciente() {
             {/* Form Anamnese (2 colunas) */}
             <Card className="lg:col-span-2 rounded-2xl border-[#E3E7E5] bg-white shadow-xs">
               <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <CardTitle className="text-lg font-bold text-[#1C2B29]">
+                    <CardTitle className="text-base sm:text-lg font-bold text-[#1C2B29]">
                       Ficha de Anamnese Integrativa
                     </CardTitle>
                     <CardDescription className="text-xs text-[#667C78]">
@@ -745,7 +747,7 @@ export default function FichaPaciente() {
                   <Button
                     onClick={handleSalvarAnamnese}
                     disabled={savingAnamnese}
-                    className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs"
+                    className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs w-full sm:w-auto"
                   >
                     {savingAnamnese ? 'Salvando...' : 'Salvar Anamnese'}
                   </Button>

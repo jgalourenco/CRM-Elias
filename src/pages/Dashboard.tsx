@@ -8,13 +8,38 @@ import {
   notasService,
   usuariosService,
 } from '@/services/crm'
-import { Paciente, Prospeccao, Atendimento, Lancamento, Nota, Usuario } from '@/types/crm'
+import {
+  Paciente,
+  Prospeccao,
+  Atendimento,
+  Lancamento,
+  Nota,
+  Usuario,
+  TipoAtendimento,
+} from '@/types/crm'
 import { useAuth } from '@/contexts/AuthContext'
 import UltimosAtendidosCard from '@/components/dashboard/UltimosAtendidosCard'
 import NotasLembretesCard from '@/components/notas/NotasLembretesCard'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import {
   Users,
   UserPlus,
@@ -44,6 +69,17 @@ export default function Dashboard() {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [notas, setNotas] = useState<Nota[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+
+  // Modal Novo / Editar Atendimento direto do Dashboard
+  const [modalAtendimento, setModalAtendimento] = useState(false)
+  const [editingAtendimentoId, setEditingAtendimentoId] = useState<string | null>(null)
+  const [editingStatus, setEditingStatus] = useState<StatusAtendimento>('Agendado')
+  const [selectedPacienteId, setSelectedPacienteId] = useState('')
+  const [tipo, setTipo] = useState<TipoAtendimento>('Consulta')
+  const [profissional, setProfissional] = useState('Dr. Elias Mansur')
+  const [dataHora, setDataHora] = useState('')
+  const [observacoes, setObservacoes] = useState('')
+  const [isSubmittingAtendimento, setIsSubmittingAtendimento] = useState(false)
 
   const loadData = async () => {
     try {
@@ -159,6 +195,97 @@ export default function Dashboard() {
         description: 'Não foi possível iniciar a consulta.',
         variant: 'destructive',
       })
+    }
+  }
+
+  // Handlers para Novo e Edição de Atendimento no Dashboard
+  const handleAbrirNovoAtendimento = (sugestaoDataHora?: string) => {
+    setEditingAtendimentoId(null)
+    setSelectedPacienteId('')
+    setTipo('Consulta')
+    setProfissional('Dr. Elias Mansur')
+    setObservacoes('')
+    setDataHora(sugestaoDataHora || new Date().toISOString().slice(0, 16))
+    setModalAtendimento(true)
+  }
+
+  const handleEditarAtendimento = (at: Atendimento) => {
+    setEditingAtendimentoId(at.id)
+    setSelectedPacienteId(at.paciente_id)
+    setTipo(at.tipo)
+    setProfissional(at.profissional || 'Dr. Elias Mansur')
+    setEditingStatus(at.status)
+    setObservacoes(at.observacoes || '')
+
+    const dt = new Date(at.data_hora)
+    const localIso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(
+      dt.getDate(),
+    ).padStart(2, '0')}T${String(dt.getHours()).padStart(2, '0')}:${String(
+      dt.getMinutes(),
+    ).padStart(2, '0')}`
+    setDataHora(localIso)
+    setModalAtendimento(true)
+  }
+
+  const handleSalvarAtendimento = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedPacienteId || !dataHora) {
+      toast({
+        title: 'Campos obrigatórios',
+        description: 'Selecione o paciente e horário.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsSubmittingAtendimento(true)
+    try {
+      if (editingAtendimentoId) {
+        await atendimentosService.update(editingAtendimentoId, {
+          paciente_id: selectedPacienteId,
+          tipo,
+          profissional,
+          data_hora: new Date(dataHora).toISOString(),
+          status: editingStatus,
+          observacoes,
+        })
+        toast({ title: 'Agendamento atualizado!' })
+      } else {
+        await atendimentosService.create({
+          paciente_id: selectedPacienteId,
+          tipo,
+          profissional,
+          data_hora: new Date(dataHora).toISOString(),
+          status: 'Agendado',
+          observacoes,
+        })
+        toast({ title: 'Atendimento agendado!' })
+      }
+      setModalAtendimento(false)
+      loadData()
+    } catch {
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar agendamento.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSubmittingAtendimento(false)
+    }
+  }
+
+  const handleExcluirAtendimento = async () => {
+    if (!editingAtendimentoId) return
+    const confirmar = window.confirm('Deseja realmente excluir este agendamento?')
+    if (!confirmar) return
+
+    try {
+      await atendimentosService.delete(editingAtendimentoId)
+      toast({ title: 'Agendamento excluído' })
+      setModalAtendimento(false)
+      loadData()
+    } catch {
+      toast({ title: 'Erro ao excluir', variant: 'destructive' })
     }
   }
 
@@ -288,7 +415,8 @@ export default function Dashboard() {
         <div className="lg:col-span-8">
           <AgendaHojeView
             atendimentos={atendimentos}
-            onNovoAtendimento={() => navigate('/agendas')}
+            onNovoAtendimento={handleAbrirNovoAtendimento}
+            onEditarAtendimento={handleEditarAtendimento}
             onMudarStatus={handleMudarStatusHoje}
             onIniciarConsulta={handleIniciarConsulta}
             showNovoButton={true}
@@ -307,6 +435,145 @@ export default function Dashboard() {
           />
         </div>
       </div>
+
+      {/* Modal Novo / Editar Atendimento direto do Dashboard */}
+      <Dialog open={modalAtendimento} onOpenChange={setModalAtendimento}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-[#1C2B29]">
+              {editingAtendimentoId ? 'Editar Agendamento' : 'Novo Agendamento'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSalvarAtendimento} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1C2B29]">Paciente</Label>
+              <Select value={selectedPacienteId} onValueChange={setSelectedPacienteId}>
+                <SelectTrigger className="rounded-xl border-[#E3E7E5]">
+                  <SelectValue placeholder="Selecione um paciente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {pacientes.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome} — {p.telefone}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1C2B29]">Tipo de Atendimento</Label>
+              <Select value={tipo} onValueChange={(v: TipoAtendimento) => setTipo(v)}>
+                <SelectTrigger className="rounded-xl border-[#E3E7E5]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Consulta">Consulta (Primeira Consulta)</SelectItem>
+                  <SelectItem value="Retorno">Retorno (Follow-up)</SelectItem>
+                  <SelectItem value="Aplicacao_APP">Aplicação APP</SelectItem>
+                  <SelectItem value="Aplicacao_APP_AV">Aplicação APP + AV (Venosa)</SelectItem>
+                  <SelectItem value="Aplicacao_Manipulado">Aplicação Manipulado</SelectItem>
+                  <SelectItem value="Outro">Outro Procedimento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {editingAtendimentoId && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1C2B29]">
+                  Status do Atendimento
+                </Label>
+                <Select
+                  value={editingStatus}
+                  onValueChange={(v: StatusAtendimento) => setEditingStatus(v)}
+                >
+                  <SelectTrigger className="rounded-xl border-[#E3E7E5]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Agendado">Agendado</SelectItem>
+                    <SelectItem value="Confirmado">Confirmado</SelectItem>
+                    <SelectItem value="Chegou">Chegou na Recepção</SelectItem>
+                    <SelectItem value="Em_atendimento">Em Atendimento</SelectItem>
+                    <SelectItem value="Realizado">Realizado / Atendido</SelectItem>
+                    <SelectItem value="No_show">Não compareceu (No-show)</SelectItem>
+                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1C2B29]">
+                Profissional Responsável
+              </Label>
+              <Input
+                value={profissional}
+                onChange={(e) => setProfissional(e.target.value)}
+                className="rounded-xl border-[#E3E7E5]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1C2B29]">Data e Hora</Label>
+              <Input
+                type="datetime-local"
+                required
+                value={dataHora}
+                onChange={(e) => setDataHora(e.target.value)}
+                className="rounded-xl border-[#E3E7E5]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1C2B29]">Observações Clínicas</Label>
+              <Textarea
+                placeholder="Orientações de preparo, dosagem ou histórico..."
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+                className="rounded-xl border-[#E3E7E5]"
+              />
+            </div>
+
+            <DialogFooter className="gap-2 pt-2 flex flex-col sm:flex-row sm:justify-between items-center">
+              {editingAtendimentoId ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleExcluirAtendimento}
+                  className="rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 text-xs w-full sm:w-auto"
+                >
+                  Excluir
+                </Button>
+              ) : (
+                <span />
+              )}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setModalAtendimento(false)}
+                  className="rounded-xl"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingAtendimento}
+                  className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl"
+                >
+                  {isSubmittingAtendimento
+                    ? 'Salvando...'
+                    : editingAtendimentoId
+                      ? 'Salvar Alterações'
+                      : 'Confirmar Agendamento'}
+                </Button>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* BLOCO ÚLTIMOS ATENDIDOS (Estilo MedX: aba "Ver pacientes atendidos" trazida para destaque) */}
       <div className="space-y-2">

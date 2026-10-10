@@ -344,7 +344,7 @@ export default function ImportacaoMedX() {
             Instruções de Importação
           </CardTitle>
         </CardHeader>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
           <div className="p-3 bg-[#F7F6F3] rounded-xl space-y-1 border border-[#E3E7E5]">
             <span className="font-bold text-[#166A5A]">1. Preparar Planilha</span>
             <p className="text-[#667C78]">

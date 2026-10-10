@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ListOrdered,
+  Edit3,
 } from 'lucide-react'
 import AgendaHojeView, { isSameDay } from '@/components/agendas/AgendaHojeView'
 import { useToast } from '@/hooks/use-toast'
@@ -49,8 +50,10 @@ export default function Agendas() {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'today'>('today')
   const [currentDate, setCurrentDate] = useState(new Date())
 
-  // Modal Novo Atendimento
+  // Modal Novo / Editar Atendimento
   const [modalNovo, setModalNovo] = useState(false)
+  const [editingAtendimentoId, setEditingAtendimentoId] = useState<string | null>(null)
+  const [editingStatus, setEditingStatus] = useState<StatusAtendimento>('Agendado')
   const [selectedPacienteId, setSelectedPacienteId] = useState('')
   const [tipo, setTipo] = useState<TipoAtendimento>('Consulta')
   const [profissional, setProfissional] = useState('Dr. Elias Mansur')
@@ -206,30 +209,46 @@ export default function Agendas() {
 
     setIsSubmitting(true)
     try {
-      await atendimentosService.create({
-        paciente_id: pac.id,
-        tipo,
-        profissional,
-        data_hora: new Date(dataHora).toISOString(),
-        status: 'Agendado',
-        observacoes,
-      })
+      if (editingAtendimentoId) {
+        // Edição de atendimento existente
+        await atendimentosService.update(editingAtendimentoId, {
+          paciente_id: pac.id,
+          tipo,
+          profissional,
+          data_hora: new Date(dataHora).toISOString(),
+          status: editingStatus,
+          observacoes,
+        })
+        toast({ title: 'Agendamento atualizado!', description: 'Dados salvos com sucesso.' })
+      } else {
+        // Criação de novo atendimento
+        await atendimentosService.create({
+          paciente_id: pac.id,
+          tipo,
+          profissional,
+          data_hora: new Date(dataHora).toISOString(),
+          status: 'Agendado',
+          observacoes,
+        })
 
-      // Disparar lembrete de agendamento automático
-      const horaFormatada = new Date(dataHora).toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-      if (tipo === 'Aplicacao_APP') {
-        await dispatchAutomacao('Lembrete de aplicação APP', pac, { hora: horaFormatada })
-      } else if (tipo === 'Aplicacao_APP_AV') {
-        await dispatchAutomacao('Lembrete de aplicação APP+AV', pac, { hora: horaFormatada })
-      } else if (tipo === 'Retorno') {
-        await dispatchAutomacao('Lembrete de retorno', pac)
+        // Disparar lembrete de agendamento automático
+        const horaFormatada = new Date(dataHora).toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+        if (tipo === 'Aplicacao_APP') {
+          await dispatchAutomacao('Lembrete de aplicação APP', pac, { hora: horaFormatada })
+        } else if (tipo === 'Aplicacao_APP_AV') {
+          await dispatchAutomacao('Lembrete de aplicação APP+AV', pac, { hora: horaFormatada })
+        } else if (tipo === 'Retorno') {
+          await dispatchAutomacao('Lembrete de retorno', pac)
+        }
+
+        toast({ title: 'Atendimento agendado!', description: 'Horário reservado com sucesso.' })
       }
 
-      toast({ title: 'Atendimento agendado!', description: 'Horário reservado com sucesso.' })
       setModalNovo(false)
+      setEditingAtendimentoId(null)
       setSelectedPacienteId('')
       setDataHora('')
       setObservacoes('')
@@ -237,11 +256,46 @@ export default function Agendas() {
     } catch (err) {
       toast({
         title: 'Erro ao salvar',
-        description: 'Não foi possível agendar.',
+        description: 'Não foi possível salvar o agendamento.',
         variant: 'destructive',
       })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // Abertura de edição a partir do clique no card
+  const handleEditarAtendimento = (at: Atendimento) => {
+    setEditingAtendimentoId(at.id)
+    setSelectedPacienteId(at.paciente_id)
+    setTipo(at.tipo)
+    setProfissional(at.profissional || 'Dr. Elias Mansur')
+    setEditingStatus(at.status)
+    setObservacoes(at.observacoes || '')
+
+    const dt = new Date(at.data_hora)
+    const localIso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(
+      dt.getDate(),
+    ).padStart(2, '0')}T${String(dt.getHours()).padStart(2, '0')}:${String(
+      dt.getMinutes(),
+    ).padStart(2, '0')}`
+    setDataHora(localIso)
+    setModalNovo(true)
+  }
+
+  const handleExcluirAgendamento = async () => {
+    if (!editingAtendimentoId) return
+    const confirmar = window.confirm('Deseja realmente cancelar/excluir este agendamento?')
+    if (!confirmar) return
+
+    try {
+      await atendimentosService.delete(editingAtendimentoId)
+      toast({ title: 'Agendamento removido' })
+      setModalNovo(false)
+      setEditingAtendimentoId(null)
+      fetchData()
+    } catch {
+      toast({ title: 'Erro ao excluir agendamento', variant: 'destructive' })
     }
   }
 
@@ -305,6 +359,7 @@ export default function Agendas() {
           <Button
             onClick={() => {
               const nowIso = new Date().toISOString().slice(0, 16)
+              setEditingAtendimentoId(null)
               setDataHora(nowIso)
               setModalNovo(true)
             }}
@@ -316,16 +371,18 @@ export default function Agendas() {
         </div>
       </div>
 
-      {/* VISÃO HOJE (quando selecionada no toggle) */}
+      {/* VISÃO HOJE (quando selecionada no toggle) — Agenda diária hora a hora completa */}
       {viewMode === 'today' && (
         <div className="space-y-6">
           <AgendaHojeView
             atendimentos={atendimentos}
-            onNovoAtendimento={() => {
-              const nowIso = new Date().toISOString().slice(0, 16)
-              setDataHora(nowIso)
+            onNovoAtendimento={(sugestao) => {
+              setEditingAtendimentoId(null)
+              const iso = sugestao || new Date().toISOString().slice(0, 16)
+              setDataHora(iso)
               setModalNovo(true)
             }}
+            onEditarAtendimento={handleEditarAtendimento}
             onMudarStatus={handleMudarStatus}
             onIniciarConsulta={handleIniciarConsulta}
           />
@@ -358,7 +415,7 @@ export default function Agendas() {
                 .map((at) => (
                   <div
                     key={at.id}
-                    onClick={() => at.paciente_id && navigate(`/pacientes/${at.paciente_id}`)}
+                    onClick={() => handleEditarAtendimento(at)}
                     className="p-3.5 rounded-xl border border-[#E3E7E5] bg-[#F7F6F3]/50 hover:bg-[#E2F0EB]/40 cursor-pointer transition-colors space-y-1.5 group"
                   >
                     <div className="flex items-center justify-between">
@@ -465,6 +522,7 @@ export default function Agendas() {
                         key={`day-${day}`}
                         onClick={() => {
                           const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T10:00`
+                          setEditingAtendimentoId(null)
                           setDataHora(dStr)
                           setModalNovo(true)
                         }}
@@ -495,8 +553,12 @@ export default function Agendas() {
                           {dayAtendimentos.slice(0, 2).map((a) => (
                             <div
                               key={a.id}
-                              className="truncate text-[10px] px-1 py-0.5 rounded bg-white border border-[#E3E7E5] text-[#1C2B29] font-medium"
-                              title={`${a.expand?.paciente_id?.nome}: ${a.tipo}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEditarAtendimento(a)
+                              }}
+                              className="truncate text-[10px] px-1 py-0.5 rounded bg-white border border-[#E3E7E5] text-[#1C2B29] font-medium hover:border-[#166A5A] hover:bg-[#E2F0EB]/40 transition-colors"
+                              title={`${a.expand?.paciente_id?.nome}: ${a.tipo} (clique para editar)`}
                             >
                               {a.tipo.includes('APP') ? '💉' : '🩺'}{' '}
                               {a.expand?.paciente_id?.nome?.split(' ')[0]}
@@ -521,7 +583,11 @@ export default function Agendas() {
                 </div>
                 <div className="divide-y divide-[#E3E7E5]">
                   {proximos7Dias.map((at) => (
-                    <div key={at.id} className="py-3 flex items-center justify-between">
+                    <div
+                      key={at.id}
+                      onClick={() => handleEditarAtendimento(at)}
+                      className="py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50/80 px-2 rounded-lg transition-colors"
+                    >
                       <div>
                         <p className="text-sm font-semibold text-[#1C2B29]">
                           {at.expand?.paciente_id?.nome || 'Paciente'}
@@ -530,12 +596,22 @@ export default function Agendas() {
                           {at.tipo.replace('_', ' ')} • {at.profissional}
                         </p>
                       </div>
-                      <Badge variant="outline">
-                        {new Date(at.data_hora).toLocaleString('pt-BR', {
-                          dateStyle: 'short',
-                          timeStyle: 'short',
-                        })}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">
+                          {new Date(at.data_hora).toLocaleString('pt-BR', {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                          })}
+                        </Badge>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-[#667C78]"
+                          title="Editar"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -561,7 +637,7 @@ export default function Agendas() {
                 proximos7Dias.map((at) => (
                   <div
                     key={at.id}
-                    onClick={() => navigate(`/pacientes/${at.paciente_id}`)}
+                    onClick={() => handleEditarAtendimento(at)}
                     className="p-3.5 rounded-xl border border-[#E3E7E5] bg-[#F7F6F3]/50 hover:bg-[#E2F0EB]/40 cursor-pointer transition-colors space-y-1.5 group"
                   >
                     <div className="flex items-center justify-between">
@@ -601,8 +677,33 @@ export default function Agendas() {
       <Dialog open={modalNovo} onOpenChange={setModalNovo}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-[#1C2B29]">Novo Atendimento</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-[#1C2B29]">
+              {editingAtendimentoId ? 'Editar Agendamento' : 'Novo Atendimento'}
+            </DialogTitle>
           </DialogHeader>
+
+          {editingAtendimentoId && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1C2B29]">Status do Atendimento</Label>
+              <Select
+                value={editingStatus}
+                onValueChange={(v: StatusAtendimento) => setEditingStatus(v)}
+              >
+                <SelectTrigger className="rounded-xl border-[#E3E7E5]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Agendado">Agendado</SelectItem>
+                  <SelectItem value="Confirmado">Confirmado</SelectItem>
+                  <SelectItem value="Chegou">Chegou na Recepção</SelectItem>
+                  <SelectItem value="Em_atendimento">Em Atendimento</SelectItem>
+                  <SelectItem value="Realizado">Realizado / Atendido</SelectItem>
+                  <SelectItem value="No_show">Não compareceu (No-show)</SelectItem>
+                  <SelectItem value="Cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <form onSubmit={handleCriarAtendimento} className="space-y-4">
             <div className="space-y-1.5">
@@ -670,22 +771,43 @@ export default function Agendas() {
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setModalNovo(false)}
-                className="rounded-xl"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl"
-              >
-                {isSubmitting ? 'Salvando...' : 'Confirmar Agendamento'}
-              </Button>
+            <DialogFooter className="gap-2 pt-2 flex flex-col sm:flex-row sm:justify-between items-center">
+              {editingAtendimentoId ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleExcluirAgendamento}
+                  className="rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 text-xs w-full sm:w-auto"
+                >
+                  Excluir
+                </Button>
+              ) : (
+                <span />
+              )}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setModalNovo(false)
+                    setEditingAtendimentoId(null)
+                  }}
+                  className="rounded-xl"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl"
+                >
+                  {isSubmitting
+                    ? 'Salvando...'
+                    : editingAtendimentoId
+                      ? 'Salvar Alterações'
+                      : 'Confirmar Agendamento'}
+                </Button>
+              </div>
             </DialogFooter>
           </form>
         </DialogContent>
