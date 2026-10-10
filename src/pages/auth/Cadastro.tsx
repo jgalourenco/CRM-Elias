@@ -62,7 +62,7 @@ export default function Cadastro() {
             canal: 'Email',
             direcao: 'saida',
             template: 'Verificação de Conta (Simulado)',
-            conteudo: `Olá ${nome}, confirme seu e-mail para ativar seu acesso à Clínica Seleta CRM: https://crm-seleta.goskip.app/verificar-email?token=token_simulado_${user.id}`,
+            conteudo: `Olá ${nome}, confirme seu e-mail para ativar seu acesso à Clínica Elias Mansur: https://crm.clinicaeliasmansur.com.br/verificar-email?token=token_simulado_${user.id}`,
             status: 'enviada',
             lida: false,
           })
@@ -113,9 +113,11 @@ export default function Cadastro() {
             <Sparkles className="h-6 w-6 text-[#C9A227]" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1C2B29]">
-            Criar Nova Conta
+            Criar Conta
           </h1>
-          <p className="text-sm text-[#667C78]">Acesso para membros da equipe Clínica Seleta</p>
+          <p className="text-sm text-[#667C78]">
+            Acesso para membros da equipe Clínica Elias Mansur
+          </p>{' '}
         </div>
 
         <Card className="rounded-2xl border-[#E3E7E5] shadow-xl bg-white overflow-hidden">

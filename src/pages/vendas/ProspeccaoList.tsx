@@ -188,7 +188,7 @@ export default function ProspeccaoList() {
             Gestão de Prospecção
           </h1>
           <p className="text-sm text-[#667C78]">
-            Lista de contatos em qualificação e nutrição inicial da Clínica Seleta.
+            Lista de contatos em qualificação e nutrição inicial da Clínica Elias Mansur.
           </p>
         </div>
         <Button

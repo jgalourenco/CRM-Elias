@@ -122,7 +122,7 @@ export default function EmailSimulada() {
                   >
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-[#1C2B29] truncate">
-                        {pac?.nome || 'Contato Seleta'}
+                        {pac?.nome || 'Contato Clínica Elias Mansur'}
                       </span>
                       <span className="text-[10px] text-[#667C78]">
                         {new Date(msg.created).toLocaleDateString('pt-BR', {
@@ -133,7 +133,7 @@ export default function EmailSimulada() {
                     </div>
 
                     <p className="text-xs font-medium text-[#166A5A] truncate">
-                      {msg.template || 'Notificação Clínica Seleta'}
+                      {msg.template || 'Notificação Clínica Elias Mansur'}
                     </p>
 
                     <p className="text-[11px] text-[#667C78] line-clamp-2 leading-relaxed">
@@ -154,7 +154,7 @@ export default function EmailSimulada() {
               <div className="border-b border-[#E3E7E5] pb-4 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h2 className="text-lg font-bold text-[#1C2B29]">
-                    {selectedMsg.template || 'Comunicação Oficial — Clínica Seleta'}
+                    {selectedMsg.template || 'Comunicação Oficial — Clínica Elias Mansur'}
                   </h2>
                   <Badge variant="outline" className="text-xs">
                     Status: {selectedMsg.status}
@@ -163,7 +163,7 @@ export default function EmailSimulada() {
 
                 <div className="space-y-1 text-xs text-[#667C78]">
                   <p>
-                    <strong className="text-[#1C2B29]">De:</strong> Clínica Seleta
+                    <strong className="text-[#1C2B29]">De:</strong> Clínica Elias Mansur
                     &lt;contato@seletaclinica.com.br&gt;
                   </p>
                   <p>
@@ -193,7 +193,7 @@ export default function EmailSimulada() {
                 </div>
 
                 <div className="border-t border-[#E3E7E5] pt-3 text-[11px] text-[#667C78]">
-                  Equipe Clínica Seleta • Cuidando da sua longevidade com respeito e ciência.
+                  Equipe Clínica Elias Mansur • Cuidando da sua longevidade com respeito e ciência.
                 </div>
               </div>
             </div>

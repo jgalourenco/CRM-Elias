@@ -63,7 +63,7 @@ routerAdd('POST', '/backend/v1/mfa/setup', (e) => {
 
   console.log('[SECURITY] 2FA_SETUP_STARTED: user=' + authRecord.id)
 
-  const issuer = 'Seleta CRM'
+  const issuer = 'Clínica Elias Mansur'
   const email = authRecord.getString('email')
   const otpauthUrl = 'otpauth://totp/' + encodeURIComponent(issuer) + ':' + encodeURIComponent(email) +
     '?secret=' + rawSecret +

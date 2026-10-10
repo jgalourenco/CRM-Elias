@@ -227,12 +227,21 @@ export interface Automacao {
   updated: string
 }
 
+export type UserRole =
+  | 'Administrador'
+  | 'Gestor/Recepção'
+  | 'Profissional/Saúde'
+  | 'Visualização'
+  | 'Recepção'
+  | 'Financeiro'
+
 export interface Usuario {
   id: string
   email: string
   name: string
   avatar?: string
-  papel?: 'Administrador' | 'Recepção' | 'Financeiro'
+  papel?: UserRole
+  ativo?: boolean
   mfa_enabled?: boolean
   mfa_configured_at?: string
   created: string
@@ -269,9 +278,12 @@ export interface MfaChallengeData {
 export interface MedXImportacao {
   id: string
   nome_arquivo: string
+  tipo?: string
   total_registros: number
   importados: number
   erros: number
+  status?: 'concluida' | 'com_erro'
+  usuario_nome?: string
   log_erros: Array<{ linha: number; nome?: string; erro: string }>
   criado_por?: string
   created: string

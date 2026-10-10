@@ -47,6 +47,8 @@ import { useToast } from '@/hooks/use-toast'
 export default function Pacientes() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
+  const permissions = getPermissions(user?.papel)
 
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [pacotes, setPacotes] = useState<Pacote[]>([])
@@ -179,16 +181,18 @@ export default function Pacientes() {
             Visualização de prontuários, status de atendimento, pacotes e valor de vida (LTV).
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setPacienteEditando(null)
-            setModalNovo(true)
-          }}
-          className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl font-medium gap-2 shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          Novo Paciente
-        </Button>
+        {permissions.canCreatePaciente && (
+          <Button
+            onClick={() => {
+              setPacienteParaEditar(null)
+              setModalNovoOpen(true)
+            }}
+            className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
+          >
+            <UserPlus className="h-4 w-4" />
+            Novo Paciente
+          </Button>
+        )}{' '}
       </div>
 
       {/* Filter Bar */}
@@ -436,27 +440,31 @@ export default function Pacientes() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-[#667C78] hover:text-[#166A5A] hover:bg-[#E2F0EB]"
-                            title="Editar"
-                            onClick={() => {
-                              setPacienteEditando(pac)
-                              setModalNovo(true)
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-[#667C78] hover:text-[#C0392B] hover:bg-red-50"
-                            title="Excluir"
-                            onClick={() => setPacienteExcluir(pac)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {permissions.canEditPaciente && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-[#667C78] hover:text-[#166A5A] hover:bg-[#E2F0EB]"
+                              title="Editar"
+                              onClick={() => {
+                                setPacienteEditando(pac)
+                                setModalNovo(true)
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {permissions.canDeletePaciente && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-[#667C78] hover:text-[#C0392B] hover:bg-red-50"
+                              title="Excluir"
+                              onClick={() => setPacienteExcluir(pac)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

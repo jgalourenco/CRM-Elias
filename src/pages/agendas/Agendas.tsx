@@ -53,7 +53,7 @@ export default function Agendas() {
   const [modalNovo, setModalNovo] = useState(false)
   const [selectedPacienteId, setSelectedPacienteId] = useState('')
   const [tipo, setTipo] = useState<TipoAtendimento>('Consulta')
-  const [profissional, setProfissional] = useState('Dr. Roberto Seleta')
+  const [profissional, setProfissional] = useState('Dr. Elias Mansur')
   const [dataHora, setDataHora] = useState('')
   const [observacoes, setObservacoes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)

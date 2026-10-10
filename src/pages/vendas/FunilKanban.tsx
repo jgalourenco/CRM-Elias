@@ -128,7 +128,7 @@ export default function FunilKanban() {
           </h1>
           <p className="text-sm text-[#667C78]">
             Pipeline interativo com avanço por arraste e disparo dinâmico de automações da Clínica
-            Seleta.
+            Elias Mansur.
           </p>
         </div>
         <Button

@@ -252,7 +252,8 @@ export default function Dashboard() {
             Dashboard Executivo
           </h1>
           <p className="text-sm text-[#667C78]">
-            Visão unificada de atendimentos, faturamento e fluxo de pacientes da Clínica Seleta.
+            Visão unificada de atendimentos, faturamento e fluxo de pacientes da Clínica Elias
+            Mansur.
           </p>
         </div>
         <div className="flex items-center gap-2">

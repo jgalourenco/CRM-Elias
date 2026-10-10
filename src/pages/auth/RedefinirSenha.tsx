@@ -61,7 +61,7 @@ export default function RedefinirSenha() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1C2B29]">
             Redefinir Senha
           </h1>
-          <p className="text-sm text-[#667C78]">Clínica Seleta CRM</p>
+          <p className="text-sm text-[#667C78]">Clínica Elias Mansur</p>
         </div>
 
         <Card className="rounded-2xl border-[#E3E7E5] shadow-xl bg-white overflow-hidden">

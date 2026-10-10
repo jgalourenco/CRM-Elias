@@ -36,7 +36,7 @@ const TEMPLATES_PADRAO = [
     nome: 'Lembrete de Consulta',
     canal: 'WhatsApp' as CanalMensagem,
     texto:
-      'Olá, {nome}! Lembramos do seu atendimento agendado na Clínica Seleta. Por favor, confirme respondendo a esta mensagem.',
+      'Olá, {nome}! Lembramos do seu atendimento agendado na Clínica Elias Mansur. Por favor, confirme respondendo a esta mensagem.',
   },
   {
     nome: 'Solicitação de Exames',
@@ -54,7 +54,7 @@ const TEMPLATES_PADRAO = [
     nome: 'Comunicação Oficial por E-mail',
     canal: 'Email' as CanalMensagem,
     texto:
-      'Prezado(a) {nome},\n\nEntramos em contato para compartilhar o resumo da sua consulta e o planejamento terapêutico traçado pela equipe da Clínica Seleta.\n\nFicamos à total disposição para eventuais esclarecimentos.\n\nAtenciosamente,\nEquipe Clínica Seleta',
+      'Prezado(a) {nome},\n\nEntramos em contato para compartilhar o resumo da sua consulta e o planejamento terapêutico traçado pela equipe da Clínica Elias Mansur.\n\nFicamos à total disposição para eventuais esclarecimentos.\n\nAtenciosamente,\nEquipe Clínica Elias Mansur',
   },
   {
     nome: 'Feedback e Pós-Consulta',

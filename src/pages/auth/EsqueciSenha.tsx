@@ -64,9 +64,9 @@ export default function EsqueciSenha() {
             <Sparkles className="h-6 w-6 text-[#C9A227]" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1C2B29]">
-            Recuperação de Senha
+            Recuperar Senha
           </h1>
-          <p className="text-sm text-[#667C78]">Clínica Seleta CRM</p>
+          <p className="text-sm text-[#667C78]">Clínica Elias Mansur</p>{' '}
         </div>
 
         <Card className="rounded-2xl border-[#E3E7E5] shadow-xl bg-white overflow-hidden">

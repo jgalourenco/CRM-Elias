@@ -114,7 +114,7 @@ export default function FichaPaciente() {
 
   // Form Novo Atendimento
   const [tipoAt, setTipoAt] = useState<TipoAtendimento>('Consulta')
-  const [profAt, setProfAt] = useState('Dr. Roberto Seleta')
+  const [profAt, setProfAt] = useState('Dr. Elias Mansur')
   const [dataHoraAt, setDataHoraAt] = useState('')
   const [obsAt, setObsAt] = useState('')
 
@@ -755,7 +755,7 @@ export default function FichaPaciente() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold text-[#1C2B29]">
-                      Como chegou à Clínica Seleta?
+                      Como chegou à Clínica Elias Mansur?
                     </Label>
                     <Select value={comoChegou} onValueChange={setComoChegou}>
                       <SelectTrigger className="rounded-xl border-[#E3E7E5] text-xs">
@@ -924,7 +924,7 @@ export default function FichaPaciente() {
                         })}
                       </p>
                       <p className="text-xs text-[#667C78]">
-                        Profissional: {proximoAt.profissional || 'Equipe Seleta'}
+                        Profissional: {proximoAt.profissional || 'Equipe Elias Mansur'}
                       </p>
                     </div>
                   ) : (

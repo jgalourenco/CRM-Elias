@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { getPermissions } from '@/lib/permissions'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,7 @@ import { TwoFactorConfigCard } from '@/components/mfa/TwoFactorConfigCard'
 export default function MinhaConta() {
   const { user, refreshUser } = useAuth()
   const { toast } = useToast()
+  const permissions = getPermissions(user?.papel)
 
   const [nome, setNome] = useState(user?.name || '')
   const [salvandoPerfil, setSalvandoPerfil] = useState(false)
@@ -161,7 +163,7 @@ export default function MinhaConta() {
         </h1>
         <p className="text-sm text-[#667C78]">
           Gerencie suas preferências pessoais, segurança e dados de acesso ao sistema da Clínica
-          Seleta.
+          Elias Mansur.
         </p>
       </div>
 
@@ -198,9 +200,20 @@ export default function MinhaConta() {
             <div>
               <p className="font-bold text-sm text-[#1C2B29]">{user?.name}</p>
               <p className="text-xs text-[#667C78]">{user?.email}</p>
-              <span className="text-[10px] font-semibold px-2 py-0.5 bg-[#E2F0EB] text-[#166A5A] rounded-md mt-1 inline-block">
-                Perfil: {user?.papel || 'Equipe'}
-              </span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] font-semibold px-2 py-0.5 bg-[#E2F0EB] text-[#166A5A] rounded-md inline-block">
+                  Perfil: {user?.papel || 'Visualização'}
+                </span>
+                <span className="text-[10px] text-[#667C78]">
+                  {user?.papel === 'Administrador'
+                    ? '• Acesso Total'
+                    : user?.papel === 'Gestor/Recepção'
+                      ? '• Gestão & Recepção'
+                      : user?.papel === 'Profissional/Saúde'
+                        ? '• Prontuário & Atendimento'
+                        : '• Somente Leitura'}
+                </span>
+              </div>
             </div>
           </div>
 

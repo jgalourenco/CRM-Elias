@@ -25,7 +25,7 @@ export default function VerificarEmail() {
             <Sparkles className="h-6 w-6 text-[#C9A227]" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1C2B29]">
-            Clínica Seleta
+            Clínica Elias Mansur
           </h1>
         </div>
 
@@ -46,8 +46,8 @@ export default function VerificarEmail() {
                 E-mail Confirmado com Sucesso!
               </CardTitle>
               <p className="text-xs text-[#667C78]">
-                Sua conta foi ativada no sistema da Clínica Seleta. Você já pode fazer login na
-                plataforma.
+                Sua conta foi ativada no sistema da Clínica Elias Mansur. Você já pode fazer login
+                na plataforma.
               </p>
               <div className="pt-2">
                 <Button

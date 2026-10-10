@@ -190,7 +190,7 @@ export default function ReguaAtendimento() {
           </div>
           <p className="text-sm text-[#667C78]">
             Fluxo inteligente de comunicação multicanal (WhatsApp e E-mail simulados) da Clínica
-            Seleta.
+            Elias Mansur.
           </p>
         </div>
 

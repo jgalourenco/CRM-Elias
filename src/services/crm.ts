@@ -155,6 +155,15 @@ export const usuariosService = {
   async delete(id: string) {
     return await pb.collection('users').delete(id)
   },
+  async adminResetPassword(userId: string, newPassword: string) {
+    return await pb.send<{ success: boolean; message: string }>(
+      '/backend/v1/admin/reset-password',
+      {
+        method: 'POST',
+        body: { userId, newPassword },
+      },
+    )
+  },
 }
 
 export const medxImportacoesService = {

@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-10-07T20:57:43.402Z",
+  "generatedAt": "2026-10-10T00:43:28.850Z",
   "collections": [
     {
       "name": "users",
       "type": "auth",
       "apiRules": {
-        "list": "id = @request.auth.id",
-        "view": "id = @request.auth.id",
-        "create": "",
-        "update": "id = @request.auth.id",
-        "delete": "id = @request.auth.id"
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && @request.auth.papel = 'Administrador'",
+        "update": "@request.auth.id != '' && (@request.auth.papel = 'Administrador' || (id = @request.auth.id && @request.body.papel:changed = false && @request.body.ativo:changed = false))",
+        "delete": "@request.auth.id != '' && @request.auth.papel = 'Administrador'"
       },
       "fields": [
         {
@@ -50,6 +50,9 @@
           "system": false,
           "selectValues": [
             "Administrador",
+            "Gestor/Recepção",
+            "Profissional/Saúde",
+            "Visualização",
             "Recepção",
             "Financeiro"
           ]
@@ -75,6 +78,12 @@
         {
           "name": "mfa_locked_until",
           "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
           "required": false,
           "system": false
         }
@@ -637,11 +646,11 @@
       "name": "medx_importacoes",
       "type": "base",
       "apiRules": {
-        "list": "",
-        "view": "",
-        "create": "",
-        "update": "",
-        "delete": ""
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && @request.auth.papel = 'Administrador'",
+        "delete": "@request.auth.id != '' && @request.auth.papel = 'Administrador'"
       },
       "fields": [
         {
@@ -699,6 +708,28 @@
             "onCreate",
             "onUpdate"
           ]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "concluida",
+            "com_erro"
+          ]
+        },
+        {
+          "name": "tipo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "usuario_nome",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
