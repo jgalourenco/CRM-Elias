@@ -72,6 +72,15 @@ export const atendimentosService = {
   async delete(id: string) {
     return await pb.collection('atendimentos').delete(id)
   },
+  async deleteSerie(serieId: string) {
+    const records = await pb.collection('atendimentos').getFullList<Atendimento>({
+      filter: `serie_recorrencia_id = "${serieId}"`,
+    })
+    for (const r of records) {
+      await pb.collection('atendimentos').delete(r.id)
+    }
+    return records.length
+  },
 }
 
 export const lancamentosService = {
@@ -138,8 +147,14 @@ export const automacoesService = {
       sort,
     })
   },
+  async create(data: Partial<Automacao>) {
+    return await pb.collection('automacoes').create<Automacao>(data)
+  },
   async update(id: string, data: Partial<Automacao>) {
     return await pb.collection('automacoes').update<Automacao>(id, data)
+  },
+  async delete(id: string) {
+    return await pb.collection('automacoes').delete(id)
   },
 }
 
@@ -246,10 +261,13 @@ export async function dispatchAutomacao(
     const canal = automacao ? automacao.canal : 'WhatsApp'
 
     // Replace variables
+    const preCadastroUrl =
+      typeof window !== 'undefined' ? `${window.location.origin}/questionario` : '/questionario'
     const allVars: Record<string, string> = {
       nome: paciente.nome,
       hora: variables.hora || '14:00',
       data: variables.data || new Date().toLocaleDateString('pt-BR'),
+      link_questionario: preCadastroUrl,
       ...variables,
     }
 

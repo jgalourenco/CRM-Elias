@@ -34,8 +34,12 @@ import {
   AlertCircle,
   ListOrdered,
   Edit3,
+  Repeat,
+  FileBarChart,
+  Layers,
 } from 'lucide-react'
 import AgendaHojeView, { isSameDay } from '@/components/agendas/AgendaHojeView'
+import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Agendas() {
@@ -53,6 +57,7 @@ export default function Agendas() {
   // Modal Novo / Editar Atendimento
   const [modalNovo, setModalNovo] = useState(false)
   const [editingAtendimentoId, setEditingAtendimentoId] = useState<string | null>(null)
+  const [editingAtendimento, setEditingAtendimento] = useState<Atendimento | null>(null)
   const [editingStatus, setEditingStatus] = useState<StatusAtendimento>('Agendado')
   const [selectedPacienteId, setSelectedPacienteId] = useState('')
   const [tipo, setTipo] = useState<TipoAtendimento>('Consulta')
@@ -60,6 +65,11 @@ export default function Agendas() {
   const [dataHora, setDataHora] = useState('')
   const [observacoes, setObservacoes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Recorrência Semanal
+  const [repetirSemanal, setRepetirSemanal] = useState(false)
+  const [qtdSemanas, setQtdSemanas] = useState(4)
+  const [aplicarEmTodaSerie, setAplicarEmTodaSerie] = useState(false)
 
   const fetchData = async () => {
     setLoading(true)
@@ -210,48 +220,108 @@ export default function Agendas() {
     setIsSubmitting(true)
     try {
       if (editingAtendimentoId) {
-        // Edição de atendimento existente
-        await atendimentosService.update(editingAtendimentoId, {
-          paciente_id: pac.id,
-          tipo,
-          profissional,
-          data_hora: new Date(dataHora).toISOString(),
-          status: editingStatus,
-          observacoes,
-        })
-        toast({ title: 'Agendamento atualizado!', description: 'Dados salvos com sucesso.' })
-      } else {
-        // Criação de novo atendimento
-        await atendimentosService.create({
-          paciente_id: pac.id,
-          tipo,
-          profissional,
-          data_hora: new Date(dataHora).toISOString(),
-          status: 'Agendado',
-          observacoes,
-        })
-
-        // Disparar lembrete de agendamento automático
-        const horaFormatada = new Date(dataHora).toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-        if (tipo === 'Aplicacao_APP') {
-          await dispatchAutomacao('Lembrete de aplicação APP', pac, { hora: horaFormatada })
-        } else if (tipo === 'Aplicacao_APP_AV') {
-          await dispatchAutomacao('Lembrete de aplicação APP+AV', pac, { hora: horaFormatada })
-        } else if (tipo === 'Retorno') {
-          await dispatchAutomacao('Lembrete de retorno', pac)
+        // Edição de atendimento existente: individual ou em série
+        const serieId = editingAtendimento?.serie_recorrencia_id
+        if (aplicarEmTodaSerie && serieId) {
+          // Atualiza dados comuns na série inteira
+          const ocorrenciasDaSerie = atendimentos.filter((a) => a.serie_recorrencia_id === serieId)
+          for (const item of ocorrenciasDaSerie) {
+            await atendimentosService.update(item.id, {
+              profissional,
+              tipo,
+              observacoes,
+            })
+          }
+          // Atualiza status e dataHora especificamente nesta ocorrência se mudou
+          await atendimentosService.update(editingAtendimentoId, {
+            status: editingStatus,
+            data_hora: new Date(dataHora).toISOString(),
+          })
+          toast({
+            title: 'Série atualizada!',
+            description: `Profissional e tipo sincronizados em ${ocorrenciasDaSerie.length} agendamentos da série.`,
+          })
+        } else {
+          // Atualiza apenas a ocorrência individual
+          await atendimentosService.update(editingAtendimentoId, {
+            paciente_id: pac.id,
+            tipo,
+            profissional,
+            data_hora: new Date(dataHora).toISOString(),
+            status: editingStatus,
+            observacoes,
+          })
+          toast({ title: 'Agendamento atualizado!', description: 'Dados salvos com sucesso.' })
         }
+      } else {
+        // Criação de novo atendimento (único ou com série recorrente)
+        const baseDate = new Date(dataHora)
 
-        toast({ title: 'Atendimento agendado!', description: 'Horário reservado com sucesso.' })
+        if (repetirSemanal && qtdSemanas > 1) {
+          const serieId = `serie_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+          const promises = []
+
+          for (let i = 0; i < qtdSemanas; i++) {
+            const occDate = new Date(baseDate.getTime() + i * 7 * 24 * 60 * 60 * 1000)
+            promises.push(
+              atendimentosService.create({
+                paciente_id: pac.id,
+                tipo,
+                profissional,
+                data_hora: occDate.toISOString(),
+                status: 'Agendado',
+                observacoes: observacoes
+                  ? `${observacoes} (Sessão ${i + 1}/${qtdSemanas})`
+                  : `Protocolo semanal (Sessão ${i + 1}/${qtdSemanas})`,
+                serie_recorrencia_id: serieId,
+                numero_recorrencia: i + 1,
+                total_recorrencias: qtdSemanas,
+              }),
+            )
+          }
+
+          await Promise.all(promises)
+          toast({
+            title: 'Protocolo semanal criado!',
+            description: `${qtdSemanas} agendamentos gerados semanalmente para ${pac.nome}.`,
+          })
+        } else {
+          // Atendimento único
+          await atendimentosService.create({
+            paciente_id: pac.id,
+            tipo,
+            profissional,
+            data_hora: baseDate.toISOString(),
+            status: 'Agendado',
+            observacoes,
+          })
+
+          // Disparar lembrete de agendamento automático
+          const horaFormatada = baseDate.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+          if (tipo === 'Aplicacao_APP') {
+            await dispatchAutomacao('Lembrete de aplicação APP', pac, { hora: horaFormatada })
+          } else if (tipo === 'Aplicacao_APP_AV') {
+            await dispatchAutomacao('Lembrete de aplicação APP+AV', pac, { hora: horaFormatada })
+          } else if (tipo === 'Retorno') {
+            await dispatchAutomacao('Lembrete de retorno', pac)
+          }
+
+          toast({ title: 'Atendimento agendado!', description: 'Horário reservado com sucesso.' })
+        }
       }
 
       setModalNovo(false)
       setEditingAtendimentoId(null)
+      setEditingAtendimento(null)
       setSelectedPacienteId('')
       setDataHora('')
       setObservacoes('')
+      setRepetirSemanal(false)
+      setQtdSemanas(4)
+      setAplicarEmTodaSerie(false)
       fetchData()
     } catch (err) {
       toast({
@@ -267,11 +337,14 @@ export default function Agendas() {
   // Abertura de edição a partir do clique no card
   const handleEditarAtendimento = (at: Atendimento) => {
     setEditingAtendimentoId(at.id)
+    setEditingAtendimento(at)
     setSelectedPacienteId(at.paciente_id)
     setTipo(at.tipo)
     setProfissional(at.profissional || 'Dr. Elias Mansur')
     setEditingStatus(at.status)
     setObservacoes(at.observacoes || '')
+    setRepetirSemanal(false)
+    setAplicarEmTodaSerie(false)
 
     const dt = new Date(at.data_hora)
     const localIso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(
@@ -283,16 +356,42 @@ export default function Agendas() {
     setModalNovo(true)
   }
 
-  const handleExcluirAgendamento = async () => {
+  const handleExcluirAgendamento = async (excluirTodaSerie = false) => {
     if (!editingAtendimentoId) return
-    const confirmar = window.confirm('Deseja realmente cancelar/excluir este agendamento?')
+
+    const serieId = editingAtendimento?.serie_recorrencia_id
+    if (excluirTodaSerie && serieId) {
+      const confirmar = window.confirm(
+        'Deseja cancelar TODA A SÉRIE recorrente de agendamentos futuros?',
+      )
+      if (!confirmar) return
+      try {
+        const removidos = await atendimentosService.deleteSerie(serieId)
+        toast({
+          title: 'Série cancelada',
+          description: `${removidos} agendamentos da série foram removidos.`,
+        })
+        setModalNovo(false)
+        setEditingAtendimentoId(null)
+        setEditingAtendimento(null)
+        fetchData()
+      } catch {
+        toast({ title: 'Erro ao excluir série', variant: 'destructive' })
+      }
+      return
+    }
+
+    const confirmar = window.confirm(
+      'Deseja realmente cancelar/excluir este agendamento individual?',
+    )
     if (!confirmar) return
 
     try {
       await atendimentosService.delete(editingAtendimentoId)
-      toast({ title: 'Agendamento removido' })
+      toast({ title: 'Agendamento individual removido' })
       setModalNovo(false)
       setEditingAtendimentoId(null)
+      setEditingAtendimento(null)
       fetchData()
     } catch {
       toast({ title: 'Erro ao excluir agendamento', variant: 'destructive' })
@@ -327,7 +426,17 @@ export default function Agendas() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Botão Relatórios de Agenda & No-Show */}
+          <Button
+            variant="outline"
+            onClick={() => navigate('/agendas/relatorio')}
+            className="rounded-xl text-xs font-semibold gap-1.5 border-[#166A5A]/30 text-[#166A5A] hover:bg-[#E2F0EB]"
+          >
+            <FileBarChart className="h-4 w-4" />
+            <span>Relatórios & No-Show</span>
+          </Button>
+
           {/* Alternância Mensal / Semanal */}
           <div className="bg-white border border-[#E3E7E5] p-1 rounded-xl flex items-center text-xs font-semibold">
             <button
@@ -360,7 +469,10 @@ export default function Agendas() {
             onClick={() => {
               const nowIso = new Date().toISOString().slice(0, 16)
               setEditingAtendimentoId(null)
+              setEditingAtendimento(null)
               setDataHora(nowIso)
+              setRepetirSemanal(false)
+              setQtdSemanas(4)
               setModalNovo(true)
             }}
             className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
@@ -683,25 +795,50 @@ export default function Agendas() {
           </DialogHeader>
 
           {editingAtendimentoId && (
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1C2B29]">Status do Atendimento</Label>
-              <Select
-                value={editingStatus}
-                onValueChange={(v: StatusAtendimento) => setEditingStatus(v)}
-              >
-                <SelectTrigger className="rounded-xl border-[#E3E7E5]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Agendado">Agendado</SelectItem>
-                  <SelectItem value="Confirmado">Confirmado</SelectItem>
-                  <SelectItem value="Chegou">Chegou na Recepção</SelectItem>
-                  <SelectItem value="Em_atendimento">Em Atendimento</SelectItem>
-                  <SelectItem value="Realizado">Realizado / Atendido</SelectItem>
-                  <SelectItem value="No_show">Não compareceu (No-show)</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-2">
+              {editingAtendimento?.serie_recorrencia_id && (
+                <div className="p-2.5 rounded-xl bg-[#E2F0EB]/60 border border-[#166A5A]/20 flex items-center justify-between text-xs text-[#166A5A]">
+                  <div className="flex items-center gap-1.5">
+                    <Repeat className="h-3.5 w-3.5" />
+                    <span>
+                      Série Recorrente: Sessão {editingAtendimento.numero_recorrencia || 1} de{' '}
+                      {editingAtendimento.total_recorrencias || 'várias'}
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={aplicarEmTodaSerie}
+                      onChange={(e) => setAplicarEmTodaSerie(e.target.checked)}
+                      className="rounded"
+                    />
+                    Sincronizar série
+                  </label>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1C2B29]">
+                  Status do Atendimento
+                </Label>
+                <Select
+                  value={editingStatus}
+                  onValueChange={(v: StatusAtendimento) => setEditingStatus(v)}
+                >
+                  <SelectTrigger className="rounded-xl border-[#E3E7E5]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Agendado">Agendado</SelectItem>
+                    <SelectItem value="Confirmado">Confirmado</SelectItem>
+                    <SelectItem value="Chegou">Chegou na Recepção</SelectItem>
+                    <SelectItem value="Em_atendimento">Em Atendimento</SelectItem>
+                    <SelectItem value="Realizado">Realizado / Atendido</SelectItem>
+                    <SelectItem value="No_show">Não compareceu (No-show)</SelectItem>
+                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
 
@@ -761,6 +898,48 @@ export default function Agendas() {
               />
             </div>
 
+            {/* Opção de Recorrência Semanal na Criação */}
+            {!editingAtendimentoId && (
+              <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E3E7E5] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-xs font-semibold text-[#1C2B29] flex items-center gap-1.5">
+                      <Repeat className="h-3.5 w-3.5 text-[#166A5A]" />
+                      Repetir semanalmente (Protocolo)
+                    </Label>
+                    <p className="text-[10px] text-[#667C78]">
+                      Gera automaticamente agendamentos futuros no mesmo dia e horário
+                    </p>
+                  </div>
+                  <Switch checked={repetirSemanal} onCheckedChange={setRepetirSemanal} />
+                </div>
+
+                {repetirSemanal && (
+                  <div className="pt-1 flex items-center gap-2">
+                    <Label className="text-xs text-[#1C2B29] shrink-0 font-medium">
+                      Número de semanas:
+                    </Label>
+                    <Select
+                      value={String(qtdSemanas)}
+                      onValueChange={(v) => setQtdSemanas(Number(v))}
+                    >
+                      <SelectTrigger className="rounded-xl border-[#E3E7E5] bg-white h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2">2 semanas (Quinzenal/Duplo)</SelectItem>
+                        <SelectItem value="4">4 semanas (1 mês)</SelectItem>
+                        <SelectItem value="6">6 semanas</SelectItem>
+                        <SelectItem value="8">8 semanas (2 meses)</SelectItem>
+                        <SelectItem value="10">10 semanas</SelectItem>
+                        <SelectItem value="12">12 semanas (Protocolo trimestral)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1C2B29]">Observações Clínicas</Label>
               <Textarea
@@ -773,14 +952,28 @@ export default function Agendas() {
 
             <DialogFooter className="gap-2 pt-2 flex flex-col sm:flex-row sm:justify-between items-center">
               {editingAtendimentoId ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleExcluirAgendamento}
-                  className="rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 text-xs w-full sm:w-auto"
-                >
-                  Excluir
-                </Button>
+                <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleExcluirAgendamento(false)}
+                    className="rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 text-xs flex-1 sm:flex-initial"
+                    title="Excluir somente esta data"
+                  >
+                    Excluir Esta
+                  </Button>
+                  {editingAtendimento?.serie_recorrencia_id && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleExcluirAgendamento(true)}
+                      className="rounded-xl border-rose-300 text-rose-700 bg-rose-50/50 hover:bg-rose-100 text-xs flex-1 sm:flex-initial"
+                      title="Excluir todas as sessões da série"
+                    >
+                      Excluir Série
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <span />
               )}

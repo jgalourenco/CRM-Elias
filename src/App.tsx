@@ -15,7 +15,9 @@ import VerificarEmail from '@/pages/auth/VerificarEmail'
 import Dashboard from '@/pages/Dashboard'
 import PacientesList from '@/pages/pacientes/PacientesList'
 import FichaPaciente from '@/pages/pacientes/FichaPaciente'
+import PreCadastroPublico from '@/pages/pacientes/PreCadastroPublico'
 import Agendas from '@/pages/agendas/Agendas'
+import RelatorioAgenda from '@/pages/agendas/RelatorioAgenda'
 import FunilKanban from '@/pages/vendas/FunilKanban'
 import ProspeccaoList from '@/pages/vendas/ProspeccaoList'
 import Indicadores from '@/pages/vendas/Indicadores'
@@ -40,6 +42,10 @@ export default function App() {
           <Route path="/redefinir-senha" element={<RedefinirSenha />} />
           <Route path="/verificar-email" element={<VerificarEmail />} />
 
+          {/* Public Patient Questionnaire */}
+          <Route path="/questionario" element={<PreCadastroPublico />} />
+          <Route path="/pre-cadastro" element={<PreCadastroPublico />} />
+
           {/* Authenticated Global Layout Routes */}
           <Route element={<Layout />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -51,6 +57,7 @@ export default function App() {
 
             {/* Agendas */}
             <Route path="/agendas" element={<Agendas />} />
+            <Route path="/agendas/relatorio" element={<RelatorioAgenda />} />
 
             {/* Vendas */}
             <Route

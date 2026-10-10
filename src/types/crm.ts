@@ -142,6 +142,9 @@ export interface Atendimento {
   hora_chegada?: string
   hora_inicio_atendimento?: string
   hora_fim_atendimento?: string
+  serie_recorrencia_id?: string
+  numero_recorrencia?: number
+  total_recorrencias?: number
   created: string
   updated: string
   expand?: {

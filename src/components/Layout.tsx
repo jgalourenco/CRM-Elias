@@ -28,6 +28,7 @@ import {
   PanelLeftOpen,
   Sparkles,
   TrendingUp,
+  FileBarChart,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
@@ -262,15 +263,15 @@ export default function Layout() {
     >
       {/* Brand Logo Header */}
       <div
-        className={`h-16 ${isRail ? 'px-3 justify-center' : 'px-4 justify-between'} flex items-center border-b border-[#E3E7E5]/70`}
+        className={`h-16 ${isRail ? 'px-2 flex-col justify-center gap-1.5 py-2 h-auto min-h-[64px]' : 'px-3.5 justify-between flex-row'} flex items-center border-b border-[#E3E7E5]/70 relative`}
       >
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className={`flex items-center gap-2.5 min-w-0 ${isRail ? 'justify-center' : ''}`}>
           <div className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-br from-[#166A5A] to-[#0F5145] flex items-center justify-center text-white shadow-md shadow-[#166A5A]/20">
             <Sparkles className="h-5 w-5 text-[#C9A227]" />
           </div>
           {!isRail && (
-            <div className="min-w-0">
-              <span className="text-sm font-bold text-[#1C2B29] tracking-tight truncate block">
+            <div className="min-w-0 flex-1">
+              <span className="text-xs font-bold text-[#1C2B29] tracking-tight truncate block">
                 Clínica Elias Mansur
               </span>
               <span className="text-[10px] font-medium px-1.5 py-0.2 bg-[#FBF3D9] text-[#A5831D] rounded-md">
@@ -281,10 +282,11 @@ export default function Layout() {
         </div>
 
         {/* Toggle Collapse button on desktop, close on mobile */}
-        <div className="flex items-center">
+        <div className={`flex items-center shrink-0 ${isRail ? 'w-full justify-center' : 'ml-1'}`}>
           <button
             onClick={() => setMobileOpen(false)}
             className="lg:hidden p-1.5 rounded-lg text-[#667C78] hover:bg-gray-100"
+            aria-label="Fechar menu"
           >
             <X className="h-5 w-5" />
           </button>
@@ -292,6 +294,7 @@ export default function Layout() {
             onClick={toggleCollapsed}
             title={isRail ? 'Expandir menu lateral' : 'Recolher menu lateral'}
             className="hidden lg:flex p-1.5 rounded-lg text-[#667C78] hover:text-[#1C2B29] hover:bg-gray-100 transition-colors"
+            aria-label={isRail ? 'Expandir menu lateral' : 'Recolher menu lateral'}
           >
             {isRail ? (
               <PanelLeftOpen className="h-4 w-4" />
@@ -332,6 +335,14 @@ export default function Layout() {
                 renderNavLink('/pacientes', 'Pacientes', <Users className="h-4 w-4" />, 0, isRail)}
               {permissions.canAccessAgendas &&
                 renderNavLink('/agendas', 'Agendas', <Calendar className="h-4 w-4" />, 0, isRail)}
+              {permissions.canAccessAgendas &&
+                renderNavLink(
+                  '/agendas/relatorio',
+                  'Relatório Agenda',
+                  <FileBarChart className="h-4 w-4" />,
+                  0,
+                  isRail,
+                )}
             </nav>
           )}
         </div>

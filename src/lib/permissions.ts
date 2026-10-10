@@ -15,6 +15,9 @@ export interface RolePermissions {
   canAccessImportacoes: boolean
   canAccessEquipe: boolean
 
+  // Automação & Régua
+  canEditRegua: boolean
+
   // Write permissions
   canCreatePaciente: boolean
   canEditPaciente: boolean
@@ -65,6 +68,8 @@ export function getPermissions(role?: string): RolePermissions {
       canAccessImportacoes: true,
       canAccessEquipe: true,
 
+      canEditRegua: true,
+
       canCreatePaciente: true,
       canEditPaciente: true,
       canDeletePaciente: true,
@@ -91,6 +96,8 @@ export function getPermissions(role?: string): RolePermissions {
       canAccessPacotesConfig: false,
       canAccessImportacoes: true,
       canAccessEquipe: false,
+
+      canEditRegua: true,
 
       canCreatePaciente: true,
       canEditPaciente: true,
@@ -119,6 +126,8 @@ export function getPermissions(role?: string): RolePermissions {
       canAccessImportacoes: false,
       canAccessEquipe: false,
 
+      canEditRegua: false,
+
       canCreatePaciente: true,
       canEditPaciente: true,
       canDeletePaciente: false,
@@ -145,6 +154,8 @@ export function getPermissions(role?: string): RolePermissions {
     canAccessPacotesConfig: false,
     canAccessImportacoes: false,
     canAccessEquipe: false,
+
+    canEditRegua: false,
 
     canCreatePaciente: false,
     canEditPaciente: false,

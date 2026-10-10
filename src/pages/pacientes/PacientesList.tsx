@@ -29,6 +29,9 @@ import {
   Sparkles,
   DollarSign,
   Send,
+  Link as LinkIcon,
+  Check,
+  ClipboardList,
 } from 'lucide-react'
 import EnviarMensagemAvulsaModal from '@/components/pacientes/EnviarMensagemAvulsaModal'
 import {
@@ -71,6 +74,20 @@ export default function Pacientes() {
   const [pacienteEditando, setPacienteEditando] = useState<Paciente | null>(null)
   const [pacienteExcluir, setPacienteExcluir] = useState<Paciente | null>(null)
   const [pacienteMensagemAvulsa, setPacienteMensagemAvulsa] = useState<Paciente | null>(null)
+  const [copiedLink, setCopiedLink] = useState(false)
+
+  const preCadastroUrl = `${window.location.origin}/questionario`
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(preCadastroUrl)
+    setCopiedLink(true)
+    setTimeout(() => setCopiedLink(false), 2000)
+    toast({
+      title: 'Link copiado!',
+      description:
+        'O link do questionário de pré-cadastro foi copiado para a área de transferência.',
+    })
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -176,26 +193,78 @@ export default function Pacientes() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1C2B29] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1C2B29] tracking-tight flex items-center gap-2">
             Gestão de Pacientes
+            <Badge className="bg-[#E2F0EB] text-[#166A5A] text-xs font-semibold">
+              {filtered.length} cadastros
+            </Badge>
           </h1>
           <p className="text-xs sm:text-sm text-[#667C78]">
             Visualização de prontuários, status de atendimento, pacotes e valor de vida (LTV).
           </p>
         </div>
-        {permissions.canCreatePaciente && (
+
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
-            onClick={() => {
-              setPacienteEditando(null)
-              setModalNovo(true)
-            }}
-            className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm w-full sm:w-auto justify-center"
+            variant="outline"
+            onClick={handleCopyLink}
+            className="rounded-xl text-xs font-semibold gap-1.5 border-[#166A5A]/30 text-[#166A5A] hover:bg-[#E2F0EB] w-full sm:w-auto justify-center"
+            title="Copiar link público do formulário de pré-cadastro"
           >
-            <Plus className="h-4 w-4" />
-            Novo Paciente
+            {copiedLink ? (
+              <Check className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <LinkIcon className="h-4 w-4" />
+            )}
+            <span>Link de pré-cadastro</span>
           </Button>
-        )}
+
+          {permissions.canCreatePaciente && (
+            <Button
+              onClick={() => {
+                setPacienteEditando(null)
+                setModalNovo(true)
+              }}
+              className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm w-full sm:w-auto justify-center"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Paciente
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Banner Informativo Questionário de Pré-Cadastro */}
+      <Card className="rounded-2xl border border-[#166A5A]/20 bg-gradient-to-r from-[#E2F0EB]/60 via-white to-white p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 shrink-0 rounded-xl bg-[#166A5A] text-white flex items-center justify-center shadow-xs">
+            <ClipboardList className="h-5 w-5 text-[#C9A227]" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-[#1C2B29]">Questionário de Pré-Cadastro Online</p>
+            <p className="text-[11px] text-[#667C78]">
+              Envie o link para o paciente preencher queixas e dados básicos sem precisar de login.
+              Submissões entram no funil de prospecção.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+          <Input
+            readOnly
+            value={preCadastroUrl}
+            className="text-xs h-8 bg-white border-[#E3E7E5] rounded-lg max-w-[220px] font-mono text-[#667C78]"
+          />
+          <Button
+            size="sm"
+            onClick={handleCopyLink}
+            className="h-8 rounded-lg bg-[#166A5A] hover:bg-[#0F5145] text-white text-xs gap-1"
+          >
+            {copiedLink ? <Check className="h-3.5 w-3.5" /> : <LinkIcon className="h-3.5 w-3.5" />}
+            {copiedLink ? 'Copiado' : 'Copiar'}
+          </Button>
+        </div>
+      </Card>
 
       {/* Filter Bar */}
       <Card className="rounded-2xl border-[#E3E7E5] bg-white shadow-xs p-4">

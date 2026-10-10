@@ -1,10 +1,28 @@
 import React, { useEffect, useState } from 'react'
 import { automacoesService, pacientesService, dispatchAutomacao } from '@/services/crm'
-import { Automacao, Paciente, FaseRoadmapAutomacao } from '@/types/crm'
+import { Automacao, Paciente, FaseRoadmapAutomacao, CanalMensagem } from '@/types/crm'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import {
   Workflow,
   Sparkles,
@@ -12,9 +30,13 @@ import {
   MessageCircle,
   Mail,
   Clock,
-  CheckCircle2,
-  AlertCircle,
+  Edit2,
+  Link as LinkIcon,
+  Copy,
+  Check,
 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { getPermissions } from '@/lib/permissions'
 import { useToast } from '@/hooks/use-toast'
 
 interface FaseInfo {
@@ -89,10 +111,28 @@ const FASES_ROADMAP: FaseInfo[] = [
 
 export default function ReguaAtendimento() {
   const { toast } = useToast()
+  const { user } = useAuth()
+  const permissions = getPermissions(user?.papel)
+
   const [automacoes, setAutomacoes] = useState<Automacao[]>([])
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [loading, setLoading] = useState(true)
   const [executingId, setExecutingId] = useState<string | null>(null)
+
+  // Modal de edição da atividade/etapa
+  const [modalEditOpen, setModalEditOpen] = useState(false)
+  const [editingAut, setEditingAut] = useState<Automacao | null>(null)
+  const [formNome, setFormNome] = useState('')
+  const [formCanal, setFormCanal] = useState<CanalMensagem>('WhatsApp')
+  const [formGatilho, setFormGatilho] = useState('')
+  const [formAtrasoDias, setFormAtrasoDias] = useState<number>(0)
+  const [formAtrasoTipo, setFormAtrasoTipo] = useState<'exato' | 'antes' | 'apos'>('exato')
+  const [formTemplate, setFormTemplate] = useState('')
+  const [formAtivo, setFormAtivo] = useState(true)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+
+  const preCadastroUrl = `${window.location.origin}/questionario`
 
   const fetchData = async () => {
     setLoading(true)
@@ -114,8 +154,102 @@ export default function ReguaAtendimento() {
     fetchData()
   }, [])
 
+  // Abrir modal de edição
+  const handleOpenEdit = (aut: Automacao) => {
+    if (!permissions.canEditRegua) {
+      toast({
+        title: 'Acesso restrito',
+        description: 'Seu perfil tem apenas permissão de visualização para a régua.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setEditingAut(aut)
+    setFormNome(aut.nome)
+    setFormCanal(aut.canal)
+    setFormGatilho(aut.gatilho)
+    setFormTemplate(aut.template)
+    setFormAtivo(aut.ativo !== false)
+
+    const atraso = aut.atraso_minutos || 0
+    if (atraso === 0) {
+      setFormAtrasoTipo('exato')
+      setFormAtrasoDias(0)
+    } else if (atraso < 0) {
+      setFormAtrasoTipo('antes')
+      setFormAtrasoDias(Math.abs(Math.round(atraso / 1440)))
+    } else {
+      setFormAtrasoTipo('apos')
+      setFormAtrasoDias(Math.abs(Math.round(atraso / 1440)))
+    }
+
+    setModalEditOpen(true)
+  }
+
+  // Salvar edição persistida no banco
+  const handleSalvarEdicao = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingAut) return
+
+    if (!formNome.trim() || !formTemplate.trim()) {
+      toast({
+        title: 'Campos obrigatórios',
+        description: 'Preencha o título e a mensagem da atividade.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setSavingEdit(true)
+    try {
+      let calcMinutos = 0
+      if (formAtrasoTipo === 'antes') {
+        calcMinutos = -Math.abs(formAtrasoDias) * 1440
+      } else if (formAtrasoTipo === 'apos') {
+        calcMinutos = Math.abs(formAtrasoDias) * 1440
+      } else {
+        calcMinutos = 0
+      }
+
+      const updated = await automacoesService.update(editingAut.id, {
+        nome: formNome.trim(),
+        canal: formCanal,
+        gatilho: formGatilho.trim(),
+        atraso_minutos: calcMinutos,
+        template: formTemplate.trim(),
+        ativo: formAtivo,
+      })
+
+      setAutomacoes((prev) => prev.map((a) => (a.id === editingAut.id ? updated : a)))
+      toast({
+        title: 'Etapa atualizada com sucesso',
+        description: `As alterações em "${updated.nome}" foram salvas no banco de dados.`,
+      })
+      setModalEditOpen(false)
+      setEditingAut(null)
+    } catch (err) {
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar as alterações da atividade.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
   // Toggle active
   const handleToggleAtivo = async (aut: Automacao) => {
+    if (!permissions.canEditRegua) {
+      toast({
+        title: 'Acesso restrito',
+        description: 'Seu perfil não tem permissão para alterar a régua.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       const updated = await automacoesService.update(aut.id, {
         ativo: !aut.ativo,
@@ -194,15 +328,38 @@ export default function ReguaAtendimento() {
           </p>
         </div>
 
-        <Button
-          onClick={() => {
-            if (automacoes.length > 0) handleExecutarAgora(automacoes[0])
-          }}
-          className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
-        >
-          <Sparkles className="h-4 w-4 text-[#C9A227]" />
-          Disparar Teste Geral
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(preCadastroUrl)
+              setCopiedLink(true)
+              setTimeout(() => setCopiedLink(false), 2000)
+              toast({
+                title: 'Link copiado!',
+                description: 'Link do questionário de pré-cadastro pronto para envio.',
+              })
+            }}
+            className="rounded-xl text-xs font-semibold gap-1.5 border-[#166A5A]/30 text-[#166A5A] hover:bg-[#E2F0EB]"
+          >
+            {copiedLink ? (
+              <Check className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <LinkIcon className="h-4 w-4" />
+            )}
+            Copiar Link Pré-Cadastro
+          </Button>
+
+          <Button
+            onClick={() => {
+              if (automacoes.length > 0) handleExecutarAgora(automacoes[0])
+            }}
+            className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
+          >
+            <Sparkles className="h-4 w-4 text-[#C9A227]" />
+            Disparar Teste Geral
+          </Button>
+        </div>
       </div>
 
       {/* Grade por 9 Fases */}
@@ -264,10 +421,16 @@ export default function ReguaAtendimento() {
                             <span className="text-[10px] text-[#667C78]">
                               {aut.ativo !== false ? 'Ativo' : 'Pausado'}
                             </span>
-                            <Switch
-                              checked={aut.ativo !== false}
-                              onCheckedChange={() => handleToggleAtivo(aut)}
-                            />
+                            {permissions.canEditRegua ? (
+                              <Switch
+                                checked={aut.ativo !== false}
+                                onCheckedChange={() => handleToggleAtivo(aut)}
+                              />
+                            ) : (
+                              <Badge variant="outline" className="text-[10px]">
+                                {aut.ativo !== false ? 'Ativo' : 'Pausado'}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </CardHeader>
@@ -294,18 +457,31 @@ export default function ReguaAtendimento() {
                           "{aut.template}"
                         </div>
 
-                        {/* Botão Executar Agora */}
-                        <div className="pt-1">
+                        {/* Botão Executar Agora e Editar */}
+                        <div className="pt-2 flex items-center gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleExecutarAgora(aut)}
                             disabled={isRunning}
-                            className="w-full text-xs font-semibold gap-1.5 rounded-xl border-[#166A5A]/30 text-[#166A5A] hover:bg-[#E2F0EB]"
+                            className="flex-1 text-xs font-semibold gap-1.5 rounded-xl border-[#166A5A]/30 text-[#166A5A] hover:bg-[#E2F0EB]"
                           >
                             <Play className="h-3 w-3" />
-                            {isRunning ? 'Disparando...' : 'Executar agora'}
+                            {isRunning ? 'Disparando...' : 'Executar'}
                           </Button>
+
+                          {permissions.canEditRegua && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleOpenEdit(aut)}
+                              className="text-xs font-semibold gap-1 rounded-xl text-[#667C78] hover:text-[#166A5A] hover:bg-[#E2F0EB]"
+                              title="Personalizar atividade"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                              Editar
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -316,6 +492,158 @@ export default function ReguaAtendimento() {
           )
         })}
       </div>
+
+      {/* Modal de Edição da Atividade da Régua */}
+      <Dialog open={modalEditOpen} onOpenChange={setModalEditOpen}>
+        <DialogContent className="max-w-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-[#1C2B29]">
+              Personalizar Atividade da Régua
+            </DialogTitle>
+            <DialogDescription className="text-xs text-[#667C78]">
+              Edite o texto, canal, gatilho e regras de timing. As edições são gravadas diretamente
+              no banco.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSalvarEdicao} className="space-y-4 pt-1">
+            {/* Título / Nome */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1C2B29]">Título da Atividade</Label>
+              <Input
+                value={formNome}
+                onChange={(e) => setFormNome(e.target.value)}
+                placeholder="Ex.: Boas-vindas — primeiro contato"
+                className="rounded-xl border-[#E3E7E5]"
+                required
+              />
+            </div>
+
+            {/* Canal e Status */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1C2B29]">Canal de Envio</Label>
+                <Select value={formCanal} onValueChange={(v: CanalMensagem) => setFormCanal(v)}>
+                  <SelectTrigger className="rounded-xl border-[#E3E7E5]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                    <SelectItem value="Email">E-mail</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1C2B29]">Estado da Etapa</Label>
+                <div className="h-10 border border-[#E3E7E5] rounded-xl px-3 flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#1C2B29]">
+                    {formAtivo ? 'Ativa no fluxo' : 'Pausada'}
+                  </span>
+                  <Switch checked={formAtivo} onCheckedChange={setFormAtivo} />
+                </div>
+              </div>
+            </div>
+
+            {/* Gatilho */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1C2B29]">Gatilho / Condição</Label>
+              <Input
+                value={formGatilho}
+                onChange={(e) => setFormGatilho(e.target.value)}
+                placeholder="Ex.: 1 dia antes da consulta, Nova prospecção criada..."
+                className="rounded-xl border-[#E3E7E5]"
+                required
+              />
+            </div>
+
+            {/* Timing / Atraso */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1C2B29]">Timing do Envio</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Select
+                  value={formAtrasoTipo}
+                  onValueChange={(v: 'exato' | 'antes' | 'apos') => {
+                    setFormAtrasoTipo(v)
+                    if (v === 'exato') setFormAtrasoDias(0)
+                    else if (formAtrasoDias === 0) setFormAtrasoDias(1)
+                  }}
+                >
+                  <SelectTrigger className="rounded-xl border-[#E3E7E5]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="exato">Imediato no gatilho</SelectItem>
+                    <SelectItem value="antes">Dias antes do evento</SelectItem>
+                    <SelectItem value="apos">Dias após o evento</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Input
+                  type="number"
+                  min="0"
+                  max="365"
+                  disabled={formAtrasoTipo === 'exato'}
+                  value={formAtrasoDias}
+                  onChange={(e) => setFormAtrasoDias(Number(e.target.value) || 0)}
+                  placeholder="Qtd dias"
+                  className="rounded-xl border-[#E3E7E5]"
+                />
+              </div>
+            </div>
+
+            {/* Mensagem / Template */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-[#1C2B29]">Texto da Mensagem</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tag = '{link_questionario}'
+                    if (!formTemplate.includes(tag)) {
+                      setFormTemplate((prev) => `${prev} Acesse nosso pré-cadastro: ${tag}`)
+                    }
+                  }}
+                  className="text-[11px] text-[#166A5A] hover:underline font-medium flex items-center gap-1"
+                >
+                  <LinkIcon className="h-3 w-3" />
+                  Inserir link pré-cadastro
+                </button>
+              </div>
+              <Textarea
+                rows={4}
+                value={formTemplate}
+                onChange={(e) => setFormTemplate(e.target.value)}
+                placeholder="Olá {nome}!..."
+                className="rounded-xl border-[#E3E7E5] text-xs leading-relaxed"
+                required
+              />
+              <p className="text-[10px] text-[#667C78]">
+                Variáveis disponíveis: <code>{'{nome}'}</code>, <code>{'{hora}'}</code>,{' '}
+                <code>{'{data}'}</code>, <code>{'{link_questionario}'}</code>
+              </p>
+            </div>
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setModalEditOpen(false)}
+                className="rounded-xl"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={savingEdit}
+                className="bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl"
+              >
+                {savingEdit ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
