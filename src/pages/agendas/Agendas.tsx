@@ -561,7 +561,7 @@ export default function Agendas() {
 
           <Button
             onClick={() => {
-              const nowIso = new Date().toISOString().slice(0, 16)
+              const nowIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
               setEditingAtendimentoId(null)
               setEditingAtendimento(null)
               resetarCamposNovo()
@@ -644,7 +644,7 @@ export default function Agendas() {
               setEditingAtendimentoId(null)
               setEditingAtendimento(null)
               resetarCamposNovo()
-              const iso = sugestao || new Date().toISOString().slice(0, 16)
+              const iso = sugestao || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
               setDataHora(iso)
               setModalNovo(true)
             }}

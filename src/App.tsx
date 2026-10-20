@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from '@/contexts/AuthContext'
 import Layout from '@/components/Layout'
 import { RoleRoute } from '@/components/auth/RoleRoute'
+import { Toaster } from '@/components/ui/toaster'
 
 // Auth Pages
 import Login from '@/pages/auth/Login'
@@ -289,6 +290,7 @@ export default function App() {
           {/* Fallback 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <Toaster />
       </AuthProvider>
     </Router>
   )

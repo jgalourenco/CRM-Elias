@@ -117,6 +117,9 @@ function parseData(s?: string): Date | null {
 }
 
 function fmtData(s?: string): string {
+  // datas sem hora (meia-noite UTC) não devem sofrer deslocamento de fuso
+  const m = s?.match(/^(\d{4})-(\d{2})-(\d{2})[ T]00:00:00/)
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`
   const d = parseData(s)
   return d ? d.toLocaleDateString('pt-BR') : '—'
 }

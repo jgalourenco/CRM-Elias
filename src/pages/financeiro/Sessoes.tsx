@@ -504,6 +504,7 @@ export default function Sessoes() {
             onChange={setPage}
             loading={loading}
             rotulo="vendas de sessões"
+            rotuloSingular="venda de sessões"
           />
         </CardContent>
       </Card>
