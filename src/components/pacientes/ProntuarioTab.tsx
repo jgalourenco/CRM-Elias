@@ -1553,7 +1553,7 @@ function ReceituarioSection({ paciente, onReload }: { paciente: Paciente; onRelo
     setTexto(aplicarVariaveis(m?.conteudo || '', paciente))
   }
 
-  const imprimir = (controlado: boolean) => {
+  const imprimir = async (controlado: boolean) => {
     if (!texto.trim()) {
       toast({
         title: 'Documento vazio',
@@ -1598,6 +1598,11 @@ ${cabecalhoPadrao?.rodape ? `<div class="rodape">${escapeHtml(cabecalhoPadrao.ro
     janela.document.write(html)
     janela.document.close()
     janela.focus()
+    await registrarAuditoria(
+      'Prontuário',
+      'Impressão',
+      `${controlado ? 'Receita controlada' : 'Documento'} impresso — ${paciente.nome}`,
+    )
     window.setTimeout(() => janela.print(), 300)
   }
 

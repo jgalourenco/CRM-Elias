@@ -133,3 +133,65 @@ Observação: o campo de observações fica por último, mas é o texto livre ma
   Configurações).
 - Ficha com muitos campos de texto livre e família. Vale separar contato, endereço e dados clínicos.
 - Erros de digitação em handlers (`telelefonemas`) indicam que o legado não tem testes de navegação.
+
+## 5. Verificação complementar — Agenda e Prontuário (20/10/2026)
+
+Sessão logada no legado (`care-app65.medx.med.br`), somente leitura e navegação (opção A). Nenhum dado foi
+salvo, excluído, finalizado nem enviado. Nomes e dados de pacientes não são reproduzidos aqui.
+
+### 5.1 Método
+- **Inspeção passiva (REA `inspect_web_page`, com texto de acessibilidade):** lista os controles nomeados de
+  cada tela (botões, links, campos). Não dispara ações.
+- **Cliques de navegação:** feitos por CDP direto no Chrome da sessão logada, fora do REA. O provedor de
+  cenários do REA (`rea-playwright-browser-scenario`) falhou com erro de execução, então o REA não conseguiu
+  clicar. Ver a limitação em 5.4.
+- Cada clique foi escolhido para abrir uma tela, painel ou modal de visualização. Botões de gravação, IA,
+  telemedicina e envio foram listados mas não acionados.
+
+### 5.2 Agenda (`pages_front_Desk/agenda.html`)
+
+| Controle | Situação |
+|---|---|
+| Novo | **Aberto e validado.** Campos: profissional, dia, tipo de consulta, status (padrão "Agendado"), de/até, celular, confirmação, agendamentos recorrentes, repetir por. Link "Cadastrar novo paciente" e busca por nome com Enter. Fechado com **Cancelar** sem salvar. |
+| Confirmar (no diálogo Novo) | Presente. **Não clicado** (grava o atendimento). |
+| Solicitar Pagamento (no diálogo Novo) | Presente. **Não clicado** (dispara cobrança). |
+| Confirmação | Clicado. Não abriu diálogo visível e a tela não mudou. Efeito **não identificado**. |
+| Procurar (barra) | Clicado. Não abriu diálogo visível. Existe campo de busca oculto, não usado. Efeito **não confirmado**. |
+| Imprimir | Presente. **Não clicado**. |
+| Ver Desmarcados | Checkbox. **Não clicado**. |
+| Horário de 07:00 às 22:00 | Filtro de faixa. **Não clicado**. |
+| Abas "Todos" e "Elias Mansur" | Filtro por profissional. **Não clicadas**. |
+| Setas e seletor "outubro 2026" | Navegação de data. **Não clicadas**. |
+| Blocos de atendimento (10 visíveis) | Cada um mostra paciente, tipo e horário (ex.: retorno, consulta, 1º/2º APP, protocolo). Ícone de cifrão em alguns. **Nenhum aberto.** |
+
+### 5.3 Prontuário (`pages_prontuario/prontuario.html?id=…`)
+
+| Controle | Situação |
+|---|---|
+| Finalizar Consulta | **Aberto e validado.** Modal "Criar Fatura": unidade, tabela/convênio (lista de convênios), procedimentos (Acupuntura, Aplicação, Consulta, Protocolos etc.) e 19 campos. Único botão: "Finalizar Consulta", **não clicado** (cria fatura). Fechado pelo X. |
+| Ortomolecular | **Aberto e validado.** Abre o receituário (`receituarios.html`), na mesma aba, com pastas de fórmulas. Botões: Voltar, Imprimir, Imprimir Controlado, Últimos Documentos, Nova Fórmula, Nova versão, Memed. **Nenhum clicado.** Voltou ao prontuário pelo histórico. |
+| Fisiologia Hormonal, Nutrologia, Estética, Todos Módulos | Listados. **Não clicados.** |
+| Telemedicina | Listado. **Não clicado** (inicia sessão de vídeo). |
+| Evolução Inteligente | Listado. **Não clicado** (redireciona para outro módulo de IA). |
+| Sugerir Campanhas de Marketing | Checkbox. **Não clicado** (dispara campanha). |
+| R1 · Agente Obesidade e R1 · Assistente do Prontuário | Listados. **Não abertos** (o painel de agente envia dados do paciente ao modelo quando usado). |
+| Análise Completa, Análogos de GLP-1, Anfetamínicos e Dopaminérgicos, Anticonvulsivantes, Fenótipos, Fitoterapicos, Outros medicamentos | Botões de análise por IA. **Não clicados.** |
+| Iniciar novo chat, campo "Pergunte algo sobre o prontuário", seta de envio | **Não usados.** |
+| Notas: Salvar, Salvar no histórico, Cancelar | Listados. **Não clicados** (Salvar e Salvar no histórico gravam). |
+| Documentos (4 visíveis: receita, exames, solicitação de exames) | Listados. **Não abertos** (dado pessoal de saúde). |
+
+### 5.4 Limitações desta verificação
+- O REA não conseguiu clicar: o provedor de cenários de navegador falhou. Ver `rea doctor`: o registro do REA
+  no Claude Code está desatualizado (`config_drift`), e o doctor não diagnostica o provedor Playwright.
+- A inspeção passiva mostra rótulos e estrutura, não o efeito real de cada clique. Por isso os efeitos de
+  "Confirmação" e "Procurar" continuam **não confirmados**.
+- Não houve teste de gravação (salvar, confirmar, finalizar, excluir). Isso exige um paciente de teste.
+- Ações de IA (R1) e telemedicina não foram testadas, por decisão de escopo.
+
+### 5.5 Pontos de atenção para o novo CRM
+- O modal "Finalizar Consulta" já reúne convênio, procedimentos e cobrança na mesma tela do prontuário.
+  Vale separar faturamento do fluxo clínico.
+- O receituário fica em página separada e tem Imprimir e Memed. Impressão de receita com dado pessoal precisa
+  de controle de acesso e registro.
+- Os controles "Confirmação" e "Procurar" da agenda têm efeito pouco claro para quem usa o sistema. Precisam de
+  rótulo que explique a ação.
