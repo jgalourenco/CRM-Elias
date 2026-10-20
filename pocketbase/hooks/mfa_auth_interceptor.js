@@ -59,7 +59,9 @@ onRecordAuthWithPasswordRequest((e) => {
   // Usuário COM 2FA ATIVO e SENHA CORRETA:
   // NÃO EMITIR O TOKEN DEFINITIVO!
   // Gerar challengeToken temporário de uso único para 2FA
-  const jwtSecret = $os.getenv('MFA_JWT_SECRET') || 'default-seleta-crm-mfa-jwt-secret-key-32'
+  const jwtSecret = $os.getenv('MFA_JWT_SECRET')
+
+  if (!jwtSecret) throw new Error('MFA_JWT_SECRET não configurado')
   const challengeJti = $security.randomString(24)
   const durationSecs = 300 // 5 minutos de validade
 

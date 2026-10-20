@@ -28,7 +28,9 @@ routerAdd('POST', '/backend/v1/mfa/verify', (e) => {
   }
 
   // 1. Validar challengeToken JWT
-  const jwtSecret = $os.getenv('MFA_JWT_SECRET') || 'default-seleta-crm-mfa-jwt-secret-key-32'
+  const jwtSecret = $os.getenv('MFA_JWT_SECRET')
+
+  if (!jwtSecret) throw new Error('MFA_JWT_SECRET não configurado')
   let claims = null
   try {
     claims = $security.parseJWT(challengeToken, jwtSecret)
@@ -151,7 +153,10 @@ routerAdd('POST', '/backend/v1/mfa/verify', (e) => {
       })
     }
 
-    const encKey = $os.getenv('MFA_ENCRYPTION_KEY') || '4a8f9c2d1e0b7a6f5e4d3c2b1a0f9e8d'
+    const encKey = $os.getenv('MFA_ENCRYPTION_KEY')
+
+
+    if (!encKey) throw new Error('MFA_ENCRYPTION_KEY não configurado')
     let rawSecret = ''
     try {
       rawSecret = $security.decrypt(encSecret, encKey)

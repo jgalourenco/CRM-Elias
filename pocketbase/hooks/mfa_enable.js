@@ -38,7 +38,9 @@ routerAdd('POST', '/backend/v1/mfa/enable', (e) => {
   }
 
   // Descriptografar secret temporário
-  const encKey = $os.getenv('MFA_ENCRYPTION_KEY') || '4a8f9c2d1e0b7a6f5e4d3c2b1a0f9e8d'
+  const encKey = $os.getenv('MFA_ENCRYPTION_KEY')
+
+  if (!encKey) throw new Error('MFA_ENCRYPTION_KEY não configurado')
   let rawSecret = ''
   try {
     rawSecret = $security.decrypt(encTempSecret, encKey)

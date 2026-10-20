@@ -53,7 +53,9 @@ routerAdd('POST', '/backend/v1/mfa/setup', (e) => {
   }
 
   // Criptografar segredo com AES-256-GCM usando chave de 32 bytes do ambiente
-  const encKey = $os.getenv('MFA_ENCRYPTION_KEY') || '4a8f9c2d1e0b7a6f5e4d3c2b1a0f9e8d'
+  const encKey = $os.getenv('MFA_ENCRYPTION_KEY')
+
+  if (!encKey) throw new Error('MFA_ENCRYPTION_KEY não configurado')
   const encryptedSecret = $security.encrypt(rawSecret, encKey)
 
   // Salvar segredo e recovery codes temporários no registro do usuário
