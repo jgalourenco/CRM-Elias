@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { atendimentosService, pacientesService } from '@/services/crm'
+import { pacientesService } from '@/services/crm'
 import { Atendimento, Paciente, StatusAtendimento } from '@/types/crm'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,10 +29,14 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useAgendaConfig } from '@/hooks/use-agenda-config'
+import StatusAtendimentoBadge from '@/components/agendas/StatusAtendimentoBadge'
+import { listarAtendimentos, rotuloTipoAtendimento } from '@/lib/agenda'
 
 export default function RelatorioAgenda() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { cores } = useAgendaConfig()
 
   const [atendimentos, setAtendimentos] = useState<Atendimento[]>([])
   const [pacientes, setPacientes] = useState<Paciente[]>([])
@@ -58,7 +62,7 @@ export default function RelatorioAgenda() {
       setLoading(true)
       try {
         const [atRes, pacRes] = await Promise.all([
-          atendimentosService.list('', '-data_hora'),
+          listarAtendimentos('', '-data_hora'),
           pacientesService.list(1, 200),
         ])
         setAtendimentos(atRes)
@@ -168,8 +172,8 @@ export default function RelatorioAgenda() {
         `"${pac?.nome || a.expand?.paciente_id?.nome || 'Desconhecido'}"`,
         `"${pac?.telefone || ''}"`,
         `"${a.profissional || ''}"`,
-        `"${a.tipo || ''}"`,
-        `"${a.status}"`,
+        `"${rotuloTipoAtendimento(a)}"`,
+        `"${cores[a.status]?.nome || a.status}"`,
         `"${recorrente}"`,
         `"${(a.observacoes || '').replace(/"/g, '""')}"`,
       ].join(';')
@@ -200,30 +204,9 @@ export default function RelatorioAgenda() {
     window.print()
   }
 
-  const getStatusBadge = (status: StatusAtendimento) => {
-    switch (status) {
-      case 'Realizado':
-        return (
-          <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Realizado</Badge>
-        )
-      case 'No_show':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">No-show (Falta)</Badge>
-      case 'Cancelado':
-        return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100">Cancelado</Badge>
-      case 'Confirmado':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Confirmado</Badge>
-      case 'Chegou':
-        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Na Recepção</Badge>
-      case 'Em_atendimento':
-        return (
-          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">
-            Em Atendimento
-          </Badge>
-        )
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
+  const getStatusBadge = (status: StatusAtendimento) => (
+    <StatusAtendimentoBadge status={status} cores={cores} />
+  )
 
   return (
     <div className="space-y-6 print:m-0 print:p-0">
@@ -315,11 +298,11 @@ export default function RelatorioAgenda() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>
-                <SelectItem value="Realizado">Realizado (Compareceu)</SelectItem>
-                <SelectItem value="No_show">No-show (Faltou)</SelectItem>
-                <SelectItem value="Cancelado">Cancelado</SelectItem>
-                <SelectItem value="Confirmado">Confirmado</SelectItem>
-                <SelectItem value="Agendado">Agendado</SelectItem>
+                <SelectItem value="Realizado">{cores.Realizado.nome}</SelectItem>
+                <SelectItem value="No_show">{cores.No_show.nome}</SelectItem>
+                <SelectItem value="Cancelado">{cores.Cancelado.nome}</SelectItem>
+                <SelectItem value="Confirmado">{cores.Confirmado.nome}</SelectItem>
+                <SelectItem value="Agendado">{cores.Agendado.nome}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -540,7 +523,7 @@ export default function RelatorioAgenda() {
                         {a.profissional || 'Dr. Elias Mansur'}
                       </td>
                       <td className="py-3 px-4 text-[#166A5A] font-semibold">
-                        {a.tipo.replace('_', ' ')}
+                        {rotuloTipoAtendimento(a)}
                       </td>
                       <td className="py-3 px-4">
                         {a.serie_recorrencia_id ? (

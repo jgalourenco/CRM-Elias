@@ -30,6 +30,13 @@ import {
   TrendingUp,
   FileBarChart,
   UserCheck,
+  Receipt,
+  Boxes,
+  ClipboardList,
+  Wallet,
+  BarChart3,
+  Star,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
@@ -46,6 +53,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import NovoPacienteModal from '@/components/pacientes/NovoPacienteModal'
+import {
+  EVENTO_FAVORITOS,
+  carregarNomesFavoritos,
+  resolverFavoritos,
+} from '@/lib/modulosFavoritos'
 
 export default function Layout() {
   const { user, logout, isAuthenticated, isLoading } = useAuth()
@@ -70,10 +82,11 @@ export default function Layout() {
     vendas: boolean
     automacao: boolean
     config: boolean
+    financeiro: boolean
   }>(() => {
     try {
       const saved = localStorage.getItem('sidebar_sections')
-      if (saved) return JSON.parse(saved)
+      if (saved) return { financeiro: true, ...JSON.parse(saved) }
     } catch {
       /* ignore */
     }
@@ -82,6 +95,7 @@ export default function Layout() {
       vendas: true,
       automacao: true,
       config: true,
+      financeiro: true,
     }
   })
 
@@ -97,7 +111,7 @@ export default function Layout() {
     })
   }
 
-  const toggleSection = (sectionKey: 'principal' | 'vendas' | 'automacao' | 'config') => {
+  const toggleSection = (sectionKey: 'principal' | 'vendas' | 'automacao' | 'config' | 'financeiro') => {
     setSectionsOpen((prev) => {
       const next = { ...prev, [sectionKey]: !prev[sectionKey] }
       try {
@@ -110,6 +124,21 @@ export default function Layout() {
   }
 
   const permissions = getPermissions(user?.papel)
+
+  // Módulos favoritos definidos em Parâmetros do Sistema
+  const [nomesFavoritos, setNomesFavoritos] = useState<string[]>([])
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const carregar = () => {
+      carregarNomesFavoritos()
+        .then(setNomesFavoritos)
+        .catch(() => setNomesFavoritos([]))
+    }
+    carregar()
+    window.addEventListener(EVENTO_FAVORITOS, carregar)
+    return () => window.removeEventListener(EVENTO_FAVORITOS, carregar)
+  }, [isAuthenticated])
+  const favoritos = resolverFavoritos(nomesFavoritos, permissions)
 
   // Global search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -249,7 +278,7 @@ export default function Layout() {
       return (
         <Tooltip key={to}>
           <TooltipTrigger asChild>
-            <NavLink to={to} className="relative block my-1">
+            <NavLink to={to} end={to === '/config'} className="relative block my-1">
               {linkContent}
             </NavLink>
           </TooltipTrigger>
@@ -262,7 +291,7 @@ export default function Layout() {
     }
 
     return (
-      <NavLink key={to} to={to} className="block my-0.5">
+      <NavLink key={to} to={to} end={to === '/config'} className="block my-0.5">
         {linkContent}
       </NavLink>
     )
@@ -318,6 +347,28 @@ export default function Layout() {
 
       {/* Nav Menu Items */}
       <div className={`flex-1 overflow-y-auto ${isRail ? 'px-2 py-4' : 'px-3 py-4 space-y-4'}`}>
+        {/* Favoritos */}
+        {favoritos.length > 0 && (
+          <div className="space-y-1">
+            {!isRail && (
+              <span className="block px-2 py-1 text-xs font-semibold uppercase tracking-wider text-[#667C78]">
+                Favoritos
+              </span>
+            )}
+            <nav className="space-y-0.5">
+              {favoritos.map((f) =>
+                renderNavLink(
+                  f.rota,
+                  f.nome,
+                  <Star className="h-4 w-4 text-[#C9A227]" />,
+                  0,
+                  isRail,
+                ),
+              )}
+            </nav>
+          </div>
+        )}
+
         {/* Seção Principal */}
         <div className="space-y-1">
           {!isRail && (
@@ -446,6 +497,77 @@ export default function Layout() {
           </div>
         )}
 
+        {/* Seção Financeiro & Gestão */}
+        {permissions.canAccessFinanceiro && (
+          <div className="space-y-1">
+            {!isRail && (
+              <button
+                type="button"
+                onClick={() => toggleSection('financeiro')}
+                className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold uppercase tracking-wider text-[#667C78] hover:text-[#1C2B29] transition-colors"
+              >
+                <span>Financeiro & Gestão</span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform duration-200 ${sectionsOpen.financeiro ? '' : '-rotate-90'}`}
+                />
+              </button>
+            )}
+            {(isRail || sectionsOpen.financeiro) && (
+              <nav className="space-y-0.5">
+                {renderNavLink(
+                  '/gestao',
+                  'Dashboard de Gestão',
+                  <BarChart3 className="h-4 w-4" />,
+                  0,
+                  isRail,
+                )}
+                {renderNavLink(
+                  '/financeiro/faturamento',
+                  'Faturamento',
+                  <Receipt className="h-4 w-4" />,
+                  0,
+                  isRail,
+                )}
+                {renderNavLink(
+                  '/financeiro/lancamentos',
+                  'Contas a pagar/receber',
+                  <Wallet className="h-4 w-4" />,
+                  0,
+                  isRail,
+                )}
+                {renderNavLink(
+                  '/financeiro/sessoes',
+                  'Controle de Sessões',
+                  <ClipboardList className="h-4 w-4" />,
+                  0,
+                  isRail,
+                )}
+                {renderNavLink(
+                  '/financeiro/estoque',
+                  'Estoque',
+                  <Boxes className="h-4 w-4" />,
+                  0,
+                  isRail,
+                )}
+                {renderNavLink(
+                  '/financeiro/relatorios',
+                  'Relatórios financeiros',
+                  <FileBarChart className="h-4 w-4" />,
+                  0,
+                  isRail,
+                )}
+                {renderNavLink(
+                  '/marketing/qualidade',
+                  'Pesquisa de Qualidade',
+                  <Star className="h-4 w-4" />,
+                  0,
+                  isRail,
+                )}
+              </nav>
+            )}
+          </div>
+        )}
+
         {/* Seção Configurações */}
         <div className="space-y-1">
           {!isRail && (
@@ -462,6 +584,14 @@ export default function Layout() {
           )}
           {(isRail || sectionsOpen.config) && (
             <nav className="space-y-0.5">
+              {permissions.canAccessConfigClinica &&
+                renderNavLink(
+                  '/config',
+                  'Central de Configurações',
+                  <SlidersHorizontal className="h-4 w-4" />,
+                  0,
+                  isRail,
+                )}
               {permissions.canAccessPacotesConfig &&
                 renderNavLink(
                   '/config/pacotes',

@@ -25,6 +25,8 @@ import {
   FasePaciente,
 } from '@/types/crm'
 import ExamesPacienteTab from '@/components/pacientes/ExamesPacienteTab'
+import NovaFaturaDialog from '@/components/financeiro/NovaFaturaDialog'
+import ProntuarioTab from '@/components/pacientes/ProntuarioTab'
 import EnviarMensagemAvulsaModal from '@/components/pacientes/EnviarMensagemAvulsaModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -49,6 +51,21 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
+import { Receipt } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useAgendaConfig } from '@/hooks/use-agenda-config'
+import { useConfirmacaoAgenda } from '@/hooks/use-confirmacao-agenda'
+import { HorariosLivresSugeridos, SeletorTipoSetor } from '@/components/agendas/CamposAgendamento'
+import {
+  DURACAO_PADRAO_MIN,
+  avisosDeAgendamento,
+  duracaoDoTipo,
+  enumDoNomeTipo,
+  listarAtendimentos,
+  listarAtendimentosDoDia,
+  rotuloTipoAtendimento,
+} from '@/lib/agenda'
+import { getPermissions } from '@/lib/permissions'
 import NovoPacienteModal from '@/components/pacientes/NovoPacienteModal'
 import {
   User,
@@ -69,6 +86,7 @@ import {
   ChevronRight,
   TrendingUp,
   AlertCircle,
+  AlertTriangle,
 } from 'lucide-react'
 
 export default function FichaPaciente() {
@@ -76,6 +94,8 @@ export default function FichaPaciente() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
+  const permissions = getPermissions(user?.papel)
 
   const modoAtendimentoParam = searchParams.get('modo') === 'atendimento'
   const atendimentoIdParam = searchParams.get('atendimentoId')
@@ -100,6 +120,7 @@ export default function FichaPaciente() {
   const [modalEditarPaciente, setModalEditarPaciente] = useState(false)
   const [modalNovoAtendimento, setModalNovoAtendimento] = useState(false)
   const [modalNovoLancamento, setModalNovoLancamento] = useState(false)
+  const [modalNovaFatura, setModalNovaFatura] = useState(false)
   const [modalAssociarPacote, setModalAssociarPacote] = useState(false)
   const [modalMensagemAvulsa, setModalMensagemAvulsa] = useState(false)
 
@@ -117,6 +138,20 @@ export default function FichaPaciente() {
   const [profAt, setProfAt] = useState('Dr. Elias Mansur')
   const [dataHoraAt, setDataHoraAt] = useState('')
   const [obsAt, setObsAt] = useState('')
+  const [tipoAgIdAt, setTipoAgIdAt] = useState('')
+  const [setorIdAt, setSetorIdAt] = useState('')
+  const [duracaoAt, setDuracaoAt] = useState(DURACAO_PADRAO_MIN)
+  const { tipos: tiposAg, setores: setoresAg, horario: horarioAg } = useAgendaConfig()
+  const { confirmar: confirmarAgenda, dialog: dialogConfirmacaoAgenda } = useConfirmacaoAgenda()
+
+  // Pré-seleciona o primeiro tipo cadastrado ao abrir o modal de agendamento
+  useEffect(() => {
+    if (modalNovoAtendimento && tiposAg.length > 0 && !tipoAgIdAt) {
+      setTipoAgIdAt(tiposAg[0].id)
+      setTipoAt(enumDoNomeTipo(tiposAg[0].nome))
+      setDuracaoAt(duracaoDoTipo(tiposAg[0]))
+    }
+  }, [modalNovoAtendimento, tiposAg, tipoAgIdAt])
 
   // Form Novo Lancamento
   const [descLanc, setDescLanc] = useState('')
@@ -137,7 +172,7 @@ export default function FichaPaciente() {
     try {
       const [pacRes, atRes, lancRes, prospRes, msgRes, pacotesRes, examesRes] = await Promise.all([
         pacientesService.getById(id),
-        atendimentosService.list(`paciente_id = "${id}"`, '-data_hora'),
+        listarAtendimentos(`paciente_id = "${id}"`, '-data_hora'),
         lancamentosService.list(`paciente_id = "${id}"`, '-data'),
         prospeccoesService.list(`paciente_id = "${id}"`),
         mensagensService.list(`paciente_id = "${id}"`, 'created'),
@@ -265,6 +300,14 @@ export default function FichaPaciente() {
       })
       return
     }
+    if (tiposAg.length > 0 && !tipoAgIdAt) {
+      toast({
+        title: 'Tipo obrigatório',
+        description: 'Selecione o tipo de agendamento.',
+        variant: 'destructive',
+      })
+      return
+    }
 
     try {
       // Validação de saldo de pacote se for aplicação
@@ -278,9 +321,25 @@ export default function FichaPaciente() {
         if (!confirmar) return
       }
 
+      // Horário de funcionamento e conflitos de agenda do profissional
+      const duracaoMin = duracaoAt > 0 ? duracaoAt : DURACAO_PADRAO_MIN
+      const inicio = new Date(dataHoraAt)
+      const doDia = await listarAtendimentosDoDia(inicio).catch(() => [])
+      const avisos = avisosDeAgendamento({
+        inicio,
+        duracaoMin,
+        profissional: profAt,
+        atendimentos: doDia,
+        horario: horarioAg,
+      })
+      if (avisos.length > 0 && !(await confirmarAgenda('Atenção ao horário', avisos))) return
+
       await atendimentosService.create({
         paciente_id: paciente.id,
         tipo: tipoAt,
+        tipo_agendamento_id: tipoAgIdAt,
+        setor_id: setorIdAt,
+        duracao_min: duracaoMin,
         profissional: profAt,
         data_hora: new Date(dataHoraAt).toISOString(),
         status: 'Agendado',
@@ -554,6 +613,24 @@ export default function FichaPaciente() {
         Voltar para a Lista de Pacientes
       </Button>
 
+      {/* Alerta de alergia (prontuário) */}
+      {paciente.alergias_alerta?.trim() && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-xl border border-[#C0392B]/40 bg-[#C0392B]/10 p-4"
+        >
+          <AlertTriangle className="h-5 w-5 text-[#C0392B] shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-[#C0392B]">
+              Alerta de alergia
+            </p>
+            <p className="text-sm font-semibold text-[#1C2B29] whitespace-pre-line">
+              {paciente.alergias_alerta}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* BANNER MODO EM ATENDIMENTO (se ativado via Iniciar consulta) */}
       {emModoAtendimento && (
         <div className="rounded-2xl bg-gradient-to-r from-[#166A5A] via-[#166A5A] to-[#0F5145] p-5 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 border border-emerald-600/40 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -613,7 +690,19 @@ export default function FichaPaciente() {
             </Avatar>
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-bold text-[#1C2B29]">{paciente.nome}</h1>
+                <h1 className="text-2xl font-bold text-[#1C2B29]">
+                  {paciente.nome}
+                  {paciente.nome_social && (
+                    <span className="ml-2 text-base font-medium text-[#667C78]">
+                      ({paciente.nome_social})
+                    </span>
+                  )}
+                </h1>
+                {paciente.vip && (
+                  <Badge className="bg-[#C9A227] text-white hover:bg-[#C9A227] text-xs font-bold">
+                    VIP
+                  </Badge>
+                )}
                 <Badge className="bg-[#E2F0EB] text-[#166A5A] hover:bg-[#E2F0EB] text-xs capitalize">
                   {paciente.fase.replace('_', ' ')}
                 </Badge>
@@ -622,6 +711,19 @@ export default function FichaPaciente() {
                     {pacoteAtual.nome} ({paciente.aplicacoes_restantes || 0} rest.)
                   </Badge>
                 )}
+                {(paciente.tags || '')
+                  .split(',')
+                  .map((t) => t.trim())
+                  .filter(Boolean)
+                  .map((t) => (
+                    <Badge
+                      key={t}
+                      variant="outline"
+                      className="text-[11px] font-semibold text-[#667C78] border-[#E3E7E5]"
+                    >
+                      {t}
+                    </Badge>
+                  ))}
               </div>
               <div className="flex items-center gap-4 text-xs text-[#667C78] flex-wrap">
                 <span className="flex items-center gap-1">
@@ -674,6 +776,16 @@ export default function FichaPaciente() {
               <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
               Novo Lançamento
             </Button>
+            {permissions.canAccessFinanceiro && (
+              <Button
+                variant="outline"
+                onClick={() => setModalNovaFatura(true)}
+                className="flex-1 sm:flex-initial rounded-xl border-[#E3E7E5] text-xs font-semibold gap-1.5"
+              >
+                <Receipt className="h-3.5 w-3.5 text-[#166A5A]" />
+                Criar Fatura
+              </Button>
+            )}
             <Button
               onClick={() => setModalNovoAtendimento(true)}
               className="flex-1 sm:flex-initial bg-[#166A5A] hover:bg-[#0F5145] text-white rounded-xl text-xs font-semibold gap-1.5 shadow-sm"
@@ -688,12 +800,18 @@ export default function FichaPaciente() {
       {/* Tabs da Ficha */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="overflow-x-auto pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
-          <TabsList className="bg-white border border-[#E3E7E5] p-1 rounded-2xl w-full flex sm:grid sm:grid-cols-6 gap-1 min-w-[580px] sm:min-w-0">
+          <TabsList className="bg-white border border-[#E3E7E5] p-1 rounded-2xl w-full flex sm:grid sm:grid-cols-7 gap-1 min-w-[680px] sm:min-w-0">
             <TabsTrigger
               value="visao-geral"
               className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white whitespace-nowrap"
             >
               Visão Geral
+            </TabsTrigger>
+            <TabsTrigger
+              value="prontuario"
+              className="rounded-xl text-xs font-semibold data-[state=active]:bg-[#166A5A] data-[state=active]:text-white whitespace-nowrap"
+            >
+              Prontuário
             </TabsTrigger>
             <TabsTrigger
               value="exames"
@@ -916,7 +1034,7 @@ export default function FichaPaciente() {
                   {proximoAt ? (
                     <div className="p-3 bg-[#E2F0EB]/50 rounded-xl space-y-1">
                       <p className="text-sm font-bold text-[#166A5A]">
-                        {proximoAt.tipo.replace('_', ' ')}
+                        {rotuloTipoAtendimento(proximoAt)}
                       </p>
                       <p className="text-xs font-semibold text-[#1C2B29]">
                         {new Date(proximoAt.data_hora).toLocaleDateString('pt-BR')} às{' '}
@@ -968,6 +1086,15 @@ export default function FichaPaciente() {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* ABA PRONTUÁRIO (inspirada no MedX) */}
+        <TabsContent value="prontuario" className="space-y-4 pt-4">
+          <ProntuarioTab
+            paciente={paciente}
+            onChanged={loadData}
+            modoAtendimento={emModoAtendimento}
+          />
         </TabsContent>
 
         {/* ABA EXAMES (Novo módulo inspirado no MedX) */}
@@ -1024,7 +1151,7 @@ export default function FichaPaciente() {
                     atendimentos.map((at) => (
                       <tr key={at.id} className="hover:bg-gray-50/50">
                         <td className="py-3 px-4 font-semibold text-[#1C2B29] text-xs">
-                          {at.tipo.replace('_', ' ')}
+                          {rotuloTipoAtendimento(at)}
                         </td>
                         <td className="py-3 px-4 text-xs text-[#1C2B29]">
                           {new Date(at.data_hora).toLocaleDateString('pt-BR')} às{' '}
@@ -1350,6 +1477,17 @@ export default function FichaPaciente() {
         </TabsContent>
       </Tabs>
 
+      {/* Modal Criar Fatura (Faturamento) */}
+      {paciente && permissions.canAccessFinanceiro && (
+        <NovaFaturaDialog
+          open={modalNovaFatura}
+          onClose={() => setModalNovaFatura(false)}
+          onSaved={loadData}
+          pacienteId={paciente.id}
+          pacienteFixo
+        />
+      )}
+
       {/* Modal Enviar Mensagem Avulsa (MedX) */}
       {paciente && (
         <EnviarMensagemAvulsaModal
@@ -1380,22 +1518,18 @@ export default function FichaPaciente() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCriarAtendimento} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1C2B29]">Tipo de Atendimento</Label>
-              <Select value={tipoAt} onValueChange={(v: TipoAtendimento) => setTipoAt(v)}>
-                <SelectTrigger className="rounded-xl border-[#E3E7E5]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Consulta">Consulta (Primeira Consulta)</SelectItem>
-                  <SelectItem value="Retorno">Retorno (Follow-up)</SelectItem>
-                  <SelectItem value="Aplicacao_APP">Aplicação APP</SelectItem>
-                  <SelectItem value="Aplicacao_APP_AV">Aplicação APP + AV (Venosa)</SelectItem>
-                  <SelectItem value="Aplicacao_Manipulado">Aplicação Manipulado</SelectItem>
-                  <SelectItem value="Outro">Outro Procedimento</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <SeletorTipoSetor
+              tipos={tiposAg}
+              setores={setoresAg}
+              tipoAgendamentoId={tipoAgIdAt}
+              onTipoAgendamentoId={setTipoAgIdAt}
+              tipo={tipoAt}
+              onTipo={setTipoAt}
+              setorId={setorIdAt}
+              onSetorId={setSetorIdAt}
+              duracao={duracaoAt}
+              onDuracao={setDuracaoAt}
+            />
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1C2B29]">Profissional</Label>
@@ -1416,6 +1550,14 @@ export default function FichaPaciente() {
                 className="rounded-xl border-[#E3E7E5]"
               />
             </div>
+
+            <HorariosLivresSugeridos
+              dataHora={dataHoraAt}
+              onEscolher={setDataHoraAt}
+              profissional={profAt}
+              duracao={duracaoAt}
+              horario={horarioAg}
+            />
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1C2B29]">Observações</Label>
@@ -1446,6 +1588,8 @@ export default function FichaPaciente() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {dialogConfirmacaoAgenda}
 
       {/* Modal Novo Lançamento */}
       <Dialog open={modalNovoLancamento} onOpenChange={setModalNovoLancamento}>

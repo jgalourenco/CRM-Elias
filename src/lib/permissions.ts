@@ -14,6 +14,9 @@ export interface RolePermissions {
   canAccessPacotesConfig: boolean
   canAccessImportacoes: boolean
   canAccessEquipe: boolean
+  canAccessFinanceiro: boolean
+  canAccessConfigClinica: boolean
+  canAccessProntuario: boolean
 
   // Gestão de Usuários (Apenas Administrador)
   canManageUsers: boolean
@@ -76,6 +79,9 @@ export function getPermissions(role?: string): RolePermissions {
       canAccessPacotesConfig: true,
       canAccessImportacoes: true,
       canAccessEquipe: true,
+      canAccessFinanceiro: true,
+      canAccessConfigClinica: true,
+      canAccessProntuario: true,
 
       canManageUsers: true,
       canResetPasswords: true,
@@ -110,6 +116,9 @@ export function getPermissions(role?: string): RolePermissions {
       canAccessImportacoes: true,
       // Gestor pode ver a equipe, mas NÃO edita funções nem senhas (somente visualiza membros)
       canAccessEquipe: true,
+      canAccessFinanceiro: true,
+      canAccessConfigClinica: true,
+      canAccessProntuario: true,
 
       canManageUsers: false,
       canResetPasswords: false,
@@ -142,6 +151,9 @@ export function getPermissions(role?: string): RolePermissions {
       canAccessPacotesConfig: false,
       canAccessImportacoes: false,
       canAccessEquipe: false,
+      canAccessFinanceiro: false,
+      canAccessConfigClinica: false,
+      canAccessProntuario: true,
 
       canManageUsers: false,
       canResetPasswords: false,
@@ -174,6 +186,9 @@ export function getPermissions(role?: string): RolePermissions {
     canAccessPacotesConfig: false,
     canAccessImportacoes: false,
     canAccessEquipe: false,
+      canAccessFinanceiro: false,
+      canAccessConfigClinica: false,
+      canAccessProntuario: false,
 
     canManageUsers: false,
     canResetPasswords: false,

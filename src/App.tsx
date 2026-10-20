@@ -30,6 +30,21 @@ import PacotesConfig from '@/pages/config/PacotesConfig'
 import ImportacaoMedX from '@/pages/config/ImportacaoMedX'
 import EquipeConfig from '@/pages/config/EquipeConfig'
 import MinhaConta from '@/pages/config/MinhaConta'
+import Faturamento from '@/pages/financeiro/Faturamento'
+import Lancamentos from '@/pages/financeiro/Lancamentos'
+import Estoque from '@/pages/financeiro/Estoque'
+import Sessoes from '@/pages/financeiro/Sessoes'
+import RelatoriosFinanceiros from '@/pages/financeiro/Relatorios'
+import DashboardGestao from '@/pages/gestao/DashboardGestao'
+import PesquisaQualidade from '@/pages/marketing/PesquisaQualidade'
+import ConfiguracoesHub from '@/pages/config/ConfiguracoesHub'
+import CadastroGenerico from '@/pages/config/cadastros/CadastroGenerico'
+import ParametrosGerais from '@/pages/config/ParametrosGerais'
+import CoresAgenda from '@/pages/config/CoresAgenda'
+import FormulariosAnamnese from '@/pages/config/FormulariosAnamnese'
+import QuestionariosApoio from '@/pages/config/QuestionariosApoio'
+import Auditoria from '@/pages/config/Auditoria'
+import Integracoes from '@/pages/config/Integracoes'
 import NotFound from '@/pages/NotFound'
 
 export default function App() {
@@ -113,6 +128,132 @@ export default function App() {
               element={
                 <RoleRoute permission={(p) => p.canAccessMensagens}>
                   <EmailSimulada />
+                </RoleRoute>
+              }
+            />
+
+            {/* Financeiro */}
+            <Route
+              path="/financeiro/faturamento"
+              element={
+                <RoleRoute permission={(p) => p.canAccessFinanceiro}>
+                  <Faturamento />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/financeiro/lancamentos"
+              element={
+                <RoleRoute permission={(p) => p.canAccessFinanceiro}>
+                  <Lancamentos />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/financeiro/estoque"
+              element={
+                <RoleRoute permission={(p) => p.canAccessFinanceiro}>
+                  <Estoque />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/financeiro/sessoes"
+              element={
+                <RoleRoute permission={(p) => p.canAccessFinanceiro}>
+                  <Sessoes />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/financeiro/relatorios"
+              element={
+                <RoleRoute permission={(p) => p.canAccessFinanceiro}>
+                  <RelatoriosFinanceiros />
+                </RoleRoute>
+              }
+            />
+
+            {/* Gestão e marketing */}
+            <Route
+              path="/gestao"
+              element={
+                <RoleRoute permission={(p) => p.canAccessFinanceiro}>
+                  <DashboardGestao />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/marketing/qualidade"
+              element={
+                <RoleRoute permission={(p) => p.canAccessFinanceiro}>
+                  <PesquisaQualidade />
+                </RoleRoute>
+              }
+            />
+
+            {/* Configurações clínicas e de gestão */}
+            <Route
+              path="/config"
+              element={
+                <RoleRoute permission={(p) => p.canAccessConfigClinica}>
+                  <ConfiguracoesHub />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/config/cadastros/:slug"
+              element={
+                <RoleRoute permission={(p) => p.canAccessConfigClinica}>
+                  <CadastroGenerico />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/config/parametros"
+              element={
+                <RoleRoute permission={(p) => p.canAccessConfigClinica}>
+                  <ParametrosGerais />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/config/cores-agenda"
+              element={
+                <RoleRoute permission={(p) => p.canAccessConfigClinica}>
+                  <CoresAgenda />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/config/formularios-anamnese"
+              element={
+                <RoleRoute permission={(p) => p.canAccessConfigClinica}>
+                  <FormulariosAnamnese />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/config/questionarios-apoio"
+              element={
+                <RoleRoute permission={(p) => p.canAccessConfigClinica}>
+                  <QuestionariosApoio />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/config/auditoria"
+              element={
+                <RoleRoute permission={(p) => p.canManageUsers}>
+                  <Auditoria />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/config/integracoes"
+              element={
+                <RoleRoute permission={(p) => p.canManageUsers}>
+                  <Integracoes />
                 </RoleRoute>
               }
             />

@@ -25,6 +25,15 @@ import {
   SlidersHorizontal,
   Edit3,
 } from 'lucide-react'
+import { useAgendaConfig } from '@/hooks/use-agenda-config'
+import StatusAtendimentoBadge from '@/components/agendas/StatusAtendimentoBadge'
+import {
+  corTipoAtendimento,
+  deMinutos,
+  filtrarAtendimentos,
+  paraMinutos,
+  rotuloTipoAtendimento,
+} from '@/lib/agenda'
 
 export interface AgendaHojeProps {
   atendimentos: Atendimento[]
@@ -37,6 +46,9 @@ export interface AgendaHojeProps {
   compact?: boolean
   initialDate?: Date
   title?: string
+  /** Filtra a agenda por setor (id) e/ou profissional (nome). */
+  filtroSetorId?: string
+  filtroProfissional?: string
 }
 
 export function isSameDay(d1: Date, d2: Date) {
@@ -191,8 +203,11 @@ export default function AgendaHojeView({
   compact = false,
   initialDate,
   title = 'Agenda Diária — Hora a Hora',
+  filtroSetorId,
+  filtroProfissional,
 }: AgendaHojeProps) {
   const navigate = useNavigate()
+  const { cores, horario } = useAgendaConfig()
 
   // Dia ativo selecionado na visualização diária
   const [dataSelecionada, setDataSelecionada] = useState<Date>(() => {
@@ -202,9 +217,9 @@ export default function AgendaHojeView({
   // Intervalo configurável: 60 minutos (1h) ou 30 minutos (estilo MedX)
   const [intervaloMinutos, setIntervaloMinutos] = useState<30 | 60>(60)
 
-  // Expediente padrão da clínica: 07:00 até 20:00
-  const horaInicioExpediente = 7
-  const horaFimExpediente = 20
+  // Expediente da clínica (parâmetro "agenda", padrão 07:00 até 19:00)
+  const totalMinutosInicio = paraMinutos(horario.horario_inicio, 7 * 60)
+  const totalMinutosFim = paraMinutos(horario.horario_fim, 19 * 60)
 
   const now = new Date()
   const isSelectedToday = isSameDay(dataSelecionada, now)
@@ -237,7 +252,10 @@ export default function AgendaHojeView({
   }
 
   // Filtrar atendimentos do dia selecionado
-  const atendimentosDoDia = atendimentos
+  const atendimentosDoDia = filtrarAtendimentos(atendimentos, {
+    setorId: filtroSetorId,
+    profissional: filtroProfissional,
+  })
     .filter((a) => isSameDay(new Date(a.data_hora), dataSelecionada))
     .sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime())
 
@@ -283,9 +301,6 @@ export default function AgendaHojeView({
   }> = []
 
   const step = intervaloMinutos
-  const totalMinutosInicio = horaInicioExpediente * 60
-  const totalMinutosFim = horaFimExpediente * 60
-
   for (let m = totalMinutosInicio; m < totalMinutosFim; m += step) {
     const h = Math.floor(m / 60)
     const min = m % 60
@@ -481,7 +496,7 @@ export default function AgendaHojeView({
             <span className="font-semibold flex items-center gap-1.5">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               {atendimentosForaExpediente.length} atendimento(s) fora do horário regular (antes das{' '}
-              {horaInicioExpediente}h ou após as {horaFimExpediente}h)
+              {deMinutos(totalMinutosInicio)} ou após as {deMinutos(totalMinutosFim)})
             </span>
           </div>
         )}
@@ -549,7 +564,8 @@ export default function AgendaHojeView({
                         const atDate = new Date(at.data_hora)
                         const isPast = isSelectedToday && atDate < now
                         const pac = at.expand?.paciente_id
-                        const statusCfg = getStatusConfig(at.status)
+                        const corStatus = cores[at.status]?.cor ?? getStatusConfig(at.status).color
+                        const corTipo = corTipoAtendimento(at)
 
                         const isRealizado = at.status === 'Realizado'
                         const isEmAtendimento = at.status === 'Em_atendimento'
@@ -578,7 +594,7 @@ export default function AgendaHojeView({
                             }}
                             style={{
                               borderRightWidth: '8px',
-                              borderRightColor: statusCfg.color,
+                              borderRightColor: corStatus,
                             }}
                             className={`p-3.5 rounded-xl border border-[#E3E7E5] transition-all cursor-pointer group shadow-2xs hover:shadow-sm ${
                               isRealizado
@@ -626,7 +642,11 @@ export default function AgendaHojeView({
                                     </p>
 
                                     {/* Badge textual do Status colorido */}
-                                    {getStatusBadge(at.status)}
+                                    <StatusAtendimentoBadge
+                                      status={at.status}
+                                      cores={cores}
+                                      icon={getStatusConfig(at.status).icon}
+                                    />
 
                                     {pac?.convenio && (
                                       <Badge
@@ -649,8 +669,17 @@ export default function AgendaHojeView({
 
                                   <div className="flex items-center gap-2 text-xs text-[#667C78] flex-wrap">
                                     <span className="font-medium text-[#1C2B29] flex items-center gap-1">
-                                      <span>{getTipoIcon(at.tipo)}</span>
-                                      {getTipoLabel(at.tipo)}
+                                      {corTipo ? (
+                                        <span
+                                          className="h-2.5 w-2.5 rounded-full border border-black/10 shrink-0"
+                                          style={{ backgroundColor: corTipo }}
+                                          title="Cor do tipo de agendamento"
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <span>{getTipoIcon(at.tipo)}</span>
+                                      )}
+                                      {rotuloTipoAtendimento(at, getTipoLabel)}
                                     </span>
                                     <span>•</span>
                                     <span>{at.profissional || 'Dr. Elias Mansur'}</span>

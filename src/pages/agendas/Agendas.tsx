@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { atendimentosService, pacientesService, dispatchAutomacao } from '@/services/crm'
 import { Atendimento, Paciente, TipoAtendimento, StatusAtendimento } from '@/types/crm'
@@ -41,10 +41,28 @@ import {
 import AgendaHojeView, { isSameDay } from '@/components/agendas/AgendaHojeView'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
+import { useAgendaConfig } from '@/hooks/use-agenda-config'
+import { useConfirmacaoAgenda } from '@/hooks/use-confirmacao-agenda'
+import { HorariosLivresSugeridos, SeletorTipoSetor } from '@/components/agendas/CamposAgendamento'
+import {
+  DURACAO_PADRAO_MIN,
+  avisosDeAgendamento,
+  corTipoAtendimento,
+  duracaoDoAtendimento,
+  duracaoDoTipo,
+  enumDoNomeTipo,
+  estiloDaCor,
+  filtrarAtendimentos,
+  listarAtendimentos,
+  rotuloTipoAtendimento,
+} from '@/lib/agenda'
+import { STATUS_ORDEM } from '@/pages/config/CoresAgenda'
 
 export default function Agendas() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { tipos, setores, horario, cores } = useAgendaConfig()
+  const { confirmar, dialog: dialogConfirmacao } = useConfirmacaoAgenda()
 
   const [atendimentos, setAtendimentos] = useState<Atendimento[]>([])
   const [pacientes, setPacientes] = useState<Paciente[]>([])
@@ -65,6 +83,13 @@ export default function Agendas() {
   const [dataHora, setDataHora] = useState('')
   const [observacoes, setObservacoes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [tipoAgendamentoId, setTipoAgendamentoId] = useState('')
+  const [setorId, setSetorId] = useState('')
+  const [duracao, setDuracao] = useState(DURACAO_PADRAO_MIN)
+
+  // Filtros da agenda ('' = todos)
+  const [filtroSetor, setFiltroSetor] = useState('')
+  const [filtroProf, setFiltroProf] = useState('')
 
   // Recorrência Semanal
   const [repetirSemanal, setRepetirSemanal] = useState(false)
@@ -75,7 +100,7 @@ export default function Agendas() {
     setLoading(true)
     try {
       const [atRes, pacRes] = await Promise.all([
-        atendimentosService.list('', 'data_hora'),
+        listarAtendimentos('', 'data_hora'),
         pacientesService.list(1, 100),
       ])
       setAtendimentos(atRes)
@@ -128,9 +153,34 @@ export default function Agendas() {
     daysArray.push(d)
   }
 
+  const profissionais = useMemo(() => {
+    const set = new Set<string>(['Dr. Elias Mansur'])
+    for (const a of atendimentos) if (a.profissional?.trim()) set.add(a.profissional.trim())
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  }, [atendimentos])
+
+  const atendimentosVisiveis = useMemo(
+    () => filtrarAtendimentos(atendimentos, { setorId: filtroSetor, profissional: filtroProf }),
+    [atendimentos, filtroSetor, filtroProf],
+  )
+
+  // Prepara os campos de tipo/setor/duração para um novo agendamento
+  const resetarCamposNovo = () => {
+    setSetorId('')
+    if (tipos.length > 0) {
+      setTipoAgendamentoId(tipos[0].id)
+      setTipo(enumDoNomeTipo(tipos[0].nome))
+      setDuracao(duracaoDoTipo(tipos[0]))
+    } else {
+      setTipoAgendamentoId('')
+      setTipo('Consulta')
+      setDuracao(DURACAO_PADRAO_MIN)
+    }
+  }
+
   // Get appointments for a specific day
   const getAtendimentosForDay = (day: number) => {
-    return atendimentos.filter((a) => {
+    return atendimentosVisiveis.filter((a) => {
       const d = new Date(a.data_hora)
       return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day
     })
@@ -139,7 +189,7 @@ export default function Agendas() {
   // Upcoming 7 days for sidebar
   const now = new Date()
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-  const proximos7Dias = atendimentos
+  const proximos7Dias = atendimentosVisiveis
     .filter((a) => {
       const d = new Date(a.data_hora)
       return d >= now && d <= in7Days
@@ -211,10 +261,47 @@ export default function Agendas() {
       (tipo === 'Aplicacao_APP' || tipo === 'Aplicacao_APP_AV') &&
       (pac.aplicacoes_restantes || 0) <= 0
     ) {
-      const confirmar = window.confirm(
+      const prosseguir = window.confirm(
         'Paciente sem pacote com aplicações restantes. Deseja criar mesmo assim?',
       )
-      if (!confirmar) return
+      if (!prosseguir) return
+    }
+
+    // Tipo de agendamento obrigatório quando há tipos cadastrados (exceto edição de registro legado)
+    const legado = !!editingAtendimentoId && !editingAtendimento?.tipo_agendamento_id
+    if (tipos.length > 0 && !tipoAgendamentoId && !legado) {
+      toast({
+        title: 'Tipo obrigatório',
+        description: 'Selecione o tipo de agendamento.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Horário de funcionamento e conflitos (apenas a primeira ocorrência, em caso de recorrência)
+    const duracaoMin = duracao > 0 ? duracao : DURACAO_PADRAO_MIN
+    const inicio = new Date(dataHora)
+    const alterouAgenda =
+      !editingAtendimento ||
+      new Date(editingAtendimento.data_hora).getTime() !== inicio.getTime() ||
+      (editingAtendimento.profissional || '') !== profissional ||
+      duracaoDoAtendimento(editingAtendimento) !== duracaoMin
+    if (alterouAgenda && !(editingAtendimentoId && editingStatus === 'Cancelado')) {
+      const avisos = avisosDeAgendamento({
+        inicio,
+        duracaoMin,
+        profissional,
+        ignorarId: editingAtendimentoId,
+        atendimentos,
+        horario,
+      })
+      if (avisos.length > 0 && !(await confirmar('Atenção ao horário', avisos))) return
+    }
+    const camposTipo = {
+      tipo,
+      tipo_agendamento_id: tipoAgendamentoId,
+      setor_id: setorId,
+      duracao_min: duracaoMin,
     }
 
     setIsSubmitting(true)
@@ -228,7 +315,7 @@ export default function Agendas() {
           for (const item of ocorrenciasDaSerie) {
             await atendimentosService.update(item.id, {
               profissional,
-              tipo,
+              ...camposTipo,
               observacoes,
             })
           }
@@ -245,7 +332,7 @@ export default function Agendas() {
           // Atualiza apenas a ocorrência individual
           await atendimentosService.update(editingAtendimentoId, {
             paciente_id: pac.id,
-            tipo,
+            ...camposTipo,
             profissional,
             data_hora: new Date(dataHora).toISOString(),
             status: editingStatus,
@@ -266,7 +353,7 @@ export default function Agendas() {
             promises.push(
               atendimentosService.create({
                 paciente_id: pac.id,
-                tipo,
+                ...camposTipo,
                 profissional,
                 data_hora: occDate.toISOString(),
                 status: 'Agendado',
@@ -289,7 +376,7 @@ export default function Agendas() {
           // Atendimento único
           await atendimentosService.create({
             paciente_id: pac.id,
-            tipo,
+            ...camposTipo,
             profissional,
             data_hora: baseDate.toISOString(),
             status: 'Agendado',
@@ -340,6 +427,13 @@ export default function Agendas() {
     setEditingAtendimento(at)
     setSelectedPacienteId(at.paciente_id)
     setTipo(at.tipo)
+    setTipoAgendamentoId(at.tipo_agendamento_id || '')
+    setSetorId(at.setor_id || '')
+    setDuracao(
+      at.duracao_min && at.duracao_min > 0
+        ? at.duracao_min
+        : duracaoDoTipo(tipos.find((t) => t.id === at.tipo_agendamento_id)),
+    )
     setProfissional(at.profissional || 'Dr. Elias Mansur')
     setEditingStatus(at.status)
     setObservacoes(at.observacoes || '')
@@ -470,6 +564,7 @@ export default function Agendas() {
               const nowIso = new Date().toISOString().slice(0, 16)
               setEditingAtendimentoId(null)
               setEditingAtendimento(null)
+              resetarCamposNovo()
               setDataHora(nowIso)
               setRepetirSemanal(false)
               setQtdSemanas(4)
@@ -483,13 +578,72 @@ export default function Agendas() {
         </div>
       </div>
 
+      {/* Filtros por setor e profissional (valem para Hoje, Mensal e Semanal) */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-white border border-[#E3E7E5] rounded-2xl p-3">
+        <div className="flex items-center gap-2 sm:w-64">
+          <Label className="text-xs font-semibold text-[#1C2B29] shrink-0">Setor</Label>
+          <Select
+            value={filtroSetor || '__todos__'}
+            onValueChange={(v) => setFiltroSetor(v === '__todos__' ? '' : v)}
+          >
+            <SelectTrigger className="rounded-xl border-[#E3E7E5] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__todos__">Todos os setores</SelectItem>
+              {setores.map((st) => (
+                <SelectItem key={st.id} value={st.id}>
+                  {st.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2 sm:w-72">
+          <Label className="text-xs font-semibold text-[#1C2B29] shrink-0">Profissional</Label>
+          <Select
+            value={filtroProf || '__todos__'}
+            onValueChange={(v) => setFiltroProf(v === '__todos__' ? '' : v)}
+          >
+            <SelectTrigger className="rounded-xl border-[#E3E7E5] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__todos__">Todos os profissionais</SelectItem>
+              {profissionais.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {(filtroSetor || filtroProf) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setFiltroSetor('')
+              setFiltroProf('')
+            }}
+            className="text-xs text-[#166A5A] hover:bg-[#E2F0EB] rounded-xl"
+          >
+            Limpar filtros
+          </Button>
+        )}
+      </div>
+
       {/* VISÃO HOJE (quando selecionada no toggle) — Agenda diária hora a hora completa */}
       {viewMode === 'today' && (
         <div className="space-y-6">
           <AgendaHojeView
             atendimentos={atendimentos}
+            filtroSetorId={filtroSetor}
+            filtroProfissional={filtroProf}
             onNovoAtendimento={(sugestao) => {
               setEditingAtendimentoId(null)
+              setEditingAtendimento(null)
+              resetarCamposNovo()
               const iso = sugestao || new Date().toISOString().slice(0, 16)
               setDataHora(iso)
               setModalNovo(true)
@@ -532,7 +686,7 @@ export default function Agendas() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#166A5A] group-hover:underline">
-                        {at.tipo.replace('_', ' ')}
+                        {rotuloTipoAtendimento(at)}
                       </span>
                       <Badge className="text-[10px] bg-white border border-[#E3E7E5] text-[#1C2B29]">
                         {new Date(at.data_hora).toLocaleDateString('pt-BR', {
@@ -635,6 +789,8 @@ export default function Agendas() {
                         onClick={() => {
                           const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T10:00`
                           setEditingAtendimentoId(null)
+                          setEditingAtendimento(null)
+                          resetarCamposNovo()
                           setDataHora(dStr)
                           setModalNovo(true)
                         }}
@@ -669,10 +825,19 @@ export default function Agendas() {
                                 e.stopPropagation()
                                 handleEditarAtendimento(a)
                               }}
-                              className="truncate text-[10px] px-1 py-0.5 rounded bg-white border border-[#E3E7E5] text-[#1C2B29] font-medium hover:border-[#166A5A] hover:bg-[#E2F0EB]/40 transition-colors"
-                              title={`${a.expand?.paciente_id?.nome}: ${a.tipo} (clique para editar)`}
+                              style={estiloDaCor(cores[a.status]?.cor || '#667C78')}
+                              className="truncate text-[10px] px-1 py-0.5 rounded border font-medium hover:brightness-95 transition-colors"
+                              title={`${a.expand?.paciente_id?.nome}: ${rotuloTipoAtendimento(a)} — ${cores[a.status]?.nome || a.status} (clique para editar)`}
                             >
-                              {a.tipo.includes('APP') ? '💉' : '🩺'}{' '}
+                              {corTipoAtendimento(a) ? (
+                                <span
+                                  className="inline-block h-2 w-2 rounded-full mr-1 border border-black/10 align-middle"
+                                  style={{ backgroundColor: corTipoAtendimento(a) }}
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <>{a.tipo.includes('APP') ? '💉' : '🩺'} </>
+                              )}
                               {a.expand?.paciente_id?.nome?.split(' ')[0]}
                             </div>
                           ))}
@@ -705,7 +870,7 @@ export default function Agendas() {
                           {at.expand?.paciente_id?.nome || 'Paciente'}
                         </p>
                         <p className="text-xs text-[#667C78]">
-                          {at.tipo.replace('_', ' ')} • {at.profissional}
+                          {rotuloTipoAtendimento(at)} • {at.profissional}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -754,7 +919,7 @@ export default function Agendas() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#166A5A] group-hover:underline">
-                        {at.tipo.replace('_', ' ')}
+                        {rotuloTipoAtendimento(at)}
                       </span>
                       <Badge className="text-[10px] bg-white border border-[#E3E7E5] text-[#1C2B29]">
                         {new Date(at.data_hora).toLocaleDateString('pt-BR', {
@@ -829,13 +994,18 @@ export default function Agendas() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Agendado">Agendado</SelectItem>
-                    <SelectItem value="Confirmado">Confirmado</SelectItem>
-                    <SelectItem value="Chegou">Chegou na Recepção</SelectItem>
-                    <SelectItem value="Em_atendimento">Em Atendimento</SelectItem>
-                    <SelectItem value="Realizado">Realizado / Atendido</SelectItem>
-                    <SelectItem value="No_show">Não compareceu (No-show)</SelectItem>
-                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                    {STATUS_ORDEM.map((k) => (
+                      <SelectItem key={k} value={k}>
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: cores[k].cor }}
+                            aria-hidden="true"
+                          />
+                          {cores[k].nome}
+                        </span>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -859,22 +1029,18 @@ export default function Agendas() {
               </Select>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1C2B29]">Tipo de Atendimento</Label>
-              <Select value={tipo} onValueChange={(v: TipoAtendimento) => setTipo(v)}>
-                <SelectTrigger className="rounded-xl border-[#E3E7E5]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Consulta">Consulta (Primeira Consulta)</SelectItem>
-                  <SelectItem value="Retorno">Retorno (Follow-up)</SelectItem>
-                  <SelectItem value="Aplicacao_APP">Aplicação APP</SelectItem>
-                  <SelectItem value="Aplicacao_APP_AV">Aplicação APP + AV (Venosa)</SelectItem>
-                  <SelectItem value="Aplicacao_Manipulado">Aplicação Manipulado</SelectItem>
-                  <SelectItem value="Outro">Outro Procedimento</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <SeletorTipoSetor
+              tipos={tipos}
+              setores={setores}
+              tipoAgendamentoId={tipoAgendamentoId}
+              onTipoAgendamentoId={setTipoAgendamentoId}
+              tipo={tipo}
+              onTipo={setTipo}
+              setorId={setorId}
+              onSetorId={setSetorId}
+              duracao={duracao}
+              onDuracao={setDuracao}
+            />
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1C2B29]">
@@ -897,6 +1063,16 @@ export default function Agendas() {
                 className="rounded-xl border-[#E3E7E5]"
               />
             </div>
+
+            <HorariosLivresSugeridos
+              dataHora={dataHora}
+              onEscolher={setDataHora}
+              profissional={profissional}
+              duracao={duracao}
+              horario={horario}
+              ignorarId={editingAtendimentoId}
+              atendimentos={atendimentos}
+            />
 
             {/* Opção de Recorrência Semanal na Criação */}
             {!editingAtendimentoId && (
@@ -1005,6 +1181,8 @@ export default function Agendas() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {dialogConfirmacao}
     </div>
   )
 }

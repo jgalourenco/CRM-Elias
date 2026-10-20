@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Select,
   SelectContent,
@@ -21,7 +23,106 @@ import {
 import { pacientesService, prospeccoesService, dispatchAutomacao } from '@/services/crm'
 import { Paciente, FasePaciente, Sexo } from '@/types/crm'
 import { useToast } from '@/hooks/use-toast'
-import { User, MapPin, FileText, Sparkles, CreditCard } from 'lucide-react'
+import { User, MapPin, FileText, Sparkles, CreditCard, ChevronDown, Layers } from 'lucide-react'
+
+type CampoTexto =
+  | 'nome_social'
+  | 'rg'
+  | 'nr_prontuario'
+  | 'tipo'
+  | 'tags'
+  | 'matricula'
+  | 'numero_cns'
+  | 'telefone2'
+  | 'celular'
+  | 'telefone_comercial'
+  | 'contato'
+  | 'regiao'
+  | 'empresa'
+  | 'referencia'
+  | 'conheceu_por'
+  | 'indicado_por'
+  | 'estado_civil'
+  | 'profissao'
+  | 'escolaridade'
+  | 'religiao'
+  | 'pai'
+  | 'mae'
+  | 'acompanhante'
+  | 'conjuge'
+
+const CAMPOS_TEXTO: CampoTexto[] = [
+  'nome_social',
+  'rg',
+  'nr_prontuario',
+  'tipo',
+  'tags',
+  'matricula',
+  'numero_cns',
+  'telefone2',
+  'celular',
+  'telefone_comercial',
+  'contato',
+  'regiao',
+  'empresa',
+  'referencia',
+  'conheceu_por',
+  'indicado_por',
+  'estado_civil',
+  'profissao',
+  'escolaridade',
+  'religiao',
+  'pai',
+  'mae',
+  'acompanhante',
+  'conjuge',
+]
+
+interface Complementares {
+  texto: Record<CampoTexto, string>
+  vip: boolean
+  excluir_marketing: boolean
+  mala_direta: boolean
+  filhos: string
+}
+
+function complementaresDe(p?: Paciente | null): Complementares {
+  const texto = {} as Record<CampoTexto, string>
+  for (const c of CAMPOS_TEXTO) texto[c] = p?.[c] || ''
+  return {
+    texto,
+    vip: !!p?.vip,
+    excluir_marketing: !!p?.excluir_marketing,
+    mala_direta: !!p?.mala_direta,
+    filhos: p?.filhos !== undefined && p?.filhos !== null ? String(p.filhos) : '',
+  }
+}
+
+interface SecaoProps {
+  titulo: string
+  children: React.ReactNode
+  defaultOpen?: boolean
+}
+
+function SecaoRecolhivel({ titulo, children, defaultOpen = false }: SecaoProps) {
+  return (
+    <Collapsible
+      defaultOpen={defaultOpen}
+      className="rounded-xl border border-[#E3E7E5] bg-white overflow-hidden group"
+    >
+      <CollapsibleTrigger
+        type="button"
+        className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-[#166A5A] hover:bg-[#E2F0EB]/40"
+      >
+        {titulo}
+        <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-4 pb-4 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}
 
 interface Props {
   open: boolean
@@ -64,6 +165,39 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
   // Observações Clínicas
   const [observacoes, setObservacoes] = useState(pacienteParaEditar?.observacoes || '')
 
+  // Dados complementares (ficha completa)
+  const [comp, setComp] = useState<Complementares>(() => complementaresDe(pacienteParaEditar))
+  const setTexto = (campo: CampoTexto, valor: string) =>
+    setComp((c) => ({ ...c, texto: { ...c.texto, [campo]: valor } }))
+
+  const campoTexto = (campo: CampoTexto, rotulo: string, placeholder?: string) => (
+    <div className="space-y-1.5">
+      <Label htmlFor={`comp-${campo}`} className="text-xs font-semibold text-[#1C2B29]">
+        {rotulo}
+      </Label>
+      <Input
+        id={`comp-${campo}`}
+        placeholder={placeholder}
+        value={comp.texto[campo]}
+        onChange={(e) => setTexto(campo, e.target.value)}
+        className="rounded-xl border-[#E3E7E5] focus-visible:ring-[#166A5A]"
+      />
+    </div>
+  )
+
+  const campoCheck = (campo: 'vip' | 'excluir_marketing' | 'mala_direta', rotulo: string) => (
+    <div className="flex items-center gap-2">
+      <Checkbox
+        id={`comp-${campo}`}
+        checked={comp[campo]}
+        onCheckedChange={(v) => setComp((c) => ({ ...c, [campo]: v === true }))}
+      />
+      <Label htmlFor={`comp-${campo}`} className="text-xs font-semibold text-[#1C2B29]">
+        {rotulo}
+      </Label>
+    </div>
+  )
+
   // Update on prop change
   React.useEffect(() => {
     if (pacienteParaEditar) {
@@ -86,6 +220,7 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
       setCidade(pacienteParaEditar.cidade || 'São Paulo')
       setUf(pacienteParaEditar.uf || 'SP')
       setObservacoes(pacienteParaEditar.observacoes || '')
+      setComp(complementaresDe(pacienteParaEditar))
     } else {
       setNome('')
       setCpf('')
@@ -106,6 +241,7 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
       setCidade('São Paulo')
       setUf('SP')
       setObservacoes('')
+      setComp(complementaresDe(null))
     }
   }, [pacienteParaEditar, open])
 
@@ -143,6 +279,18 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
         cidade: cidade.trim() || undefined,
         uf: uf.trim() || undefined,
         observacoes: observacoes.trim() || undefined,
+        vip: comp.vip,
+        excluir_marketing: comp.excluir_marketing,
+        mala_direta: comp.mala_direta,
+        filhos:
+          comp.filhos.trim() !== '' && !Number.isNaN(Number(comp.filhos))
+            ? Math.max(0, Math.floor(Number(comp.filhos)))
+            : undefined,
+      }
+      // Campos de texto complementares: string vazia permite limpar o valor ao editar
+      for (const c of CAMPOS_TEXTO) {
+        const valor = comp.texto[c].trim()
+        if (valor || pacienteParaEditar?.id) payload[c] = valor
       }
 
       let result: Paciente
@@ -205,7 +353,7 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-[#F7F6F3] p-1 rounded-xl">
+            <TabsList className="grid w-full grid-cols-4 bg-[#F7F6F3] p-1 rounded-xl">
               <TabsTrigger
                 value="dados"
                 className="gap-2 text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#166A5A]"
@@ -226,6 +374,13 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
               >
                 <FileText className="h-3.5 w-3.5" />
                 Observações
+              </TabsTrigger>
+              <TabsTrigger
+                value="complementares"
+                className="gap-2 text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#166A5A]"
+              >
+                <Layers className="h-3.5 w-3.5" />
+                Complementares
               </TabsTrigger>
             </TabsList>
 
@@ -509,6 +664,65 @@ export default function NovoPacienteModal({ open, onClose, onSuccess, pacientePa
                   className="rounded-xl border-[#E3E7E5]"
                 />
               </div>
+            </TabsContent>
+
+            {/* ABA 4: DADOS COMPLEMENTARES (todos opcionais) */}
+            <TabsContent value="complementares" className="space-y-3 pt-4">
+              <p className="text-xs text-[#667C78]">Todos os campos desta aba são opcionais.</p>
+              <SecaoRecolhivel titulo="Identificação" defaultOpen>
+                {campoTexto('nome_social', 'Nome social')}
+                {campoTexto('rg', 'RG')}
+                {campoTexto('nr_prontuario', 'Nº do prontuário')}
+                {campoTexto('tipo', 'Tipo')}
+                <div className="sm:col-span-2">
+                  {campoTexto('tags', 'Tags (separadas por vírgula)', 'Ex: gestante, retorno')}
+                </div>
+                <div className="sm:col-span-2 flex flex-wrap gap-x-6 gap-y-2 pt-1">
+                  {campoCheck('vip', 'VIP')}
+                  {campoCheck('excluir_marketing', 'Excluir do marketing')}
+                  {campoCheck('mala_direta', 'Mala-direta')}
+                </div>
+              </SecaoRecolhivel>
+              <SecaoRecolhivel titulo="Convênio">
+                {campoTexto('matricula', 'Matrícula')}
+                {campoTexto('numero_cns', 'Número CNS')}
+              </SecaoRecolhivel>
+              <SecaoRecolhivel titulo="Contato">
+                {campoTexto('telefone2', '2º telefone')}
+                {campoTexto('celular', 'Celular')}
+                {campoTexto('telefone_comercial', 'Telefone comercial')}
+                {campoTexto('contato', 'Pessoa de contato')}
+              </SecaoRecolhivel>
+              <SecaoRecolhivel titulo="Endereço">{campoTexto('regiao', 'Região')}</SecaoRecolhivel>
+              <SecaoRecolhivel titulo="Complementares">
+                {campoTexto('empresa', 'Empresa')}
+                {campoTexto('referencia', 'Referência')}
+                {campoTexto('conheceu_por', 'Conheceu por')}
+                {campoTexto('indicado_por', 'Indicado por')}
+                {campoTexto('estado_civil', 'Estado civil')}
+                {campoTexto('profissao', 'Profissão')}
+                {campoTexto('escolaridade', 'Escolaridade')}
+                {campoTexto('religiao', 'Religião')}
+              </SecaoRecolhivel>
+              <SecaoRecolhivel titulo="Família">
+                {campoTexto('pai', 'Pai')}
+                {campoTexto('mae', 'Mãe')}
+                {campoTexto('acompanhante', 'Acompanhante')}
+                {campoTexto('conjuge', 'Cônjuge')}
+                <div className="space-y-1.5">
+                  <Label htmlFor="comp-filhos" className="text-xs font-semibold text-[#1C2B29]">
+                    Filhos
+                  </Label>
+                  <Input
+                    id="comp-filhos"
+                    type="number"
+                    min={0}
+                    value={comp.filhos}
+                    onChange={(e) => setComp((c) => ({ ...c, filhos: e.target.value }))}
+                    className="rounded-xl border-[#E3E7E5] focus-visible:ring-[#166A5A]"
+                  />
+                </div>
+              </SecaoRecolhivel>
             </TabsContent>
           </Tabs>
 
