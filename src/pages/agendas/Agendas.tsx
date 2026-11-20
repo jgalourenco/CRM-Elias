@@ -39,12 +39,15 @@ import {
   Layers,
 } from 'lucide-react'
 import AgendaHojeView, { isSameDay } from '@/components/agendas/AgendaHojeView'
+import BannerAlertaInterno from '@/components/dashboard/BannerAlertaInterno'
+import { useAlertaInternoConsulta } from '@/hooks/useAlertaInternoConsulta'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Agendas() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { alertas, dispensar, confirmarPorTelefone } = useAlertaInternoConsulta()
 
   const [atendimentos, setAtendimentos] = useState<Atendimento[]>([])
   const [pacientes, setPacientes] = useState<Paciente[]>([])
@@ -486,6 +489,11 @@ export default function Agendas() {
       {/* VISÃO HOJE (quando selecionada no toggle) — Agenda diária hora a hora completa */}
       {viewMode === 'today' && (
         <div className="space-y-6">
+          <BannerAlertaInterno
+            alertas={alertas}
+            onDispensar={dispensar}
+            onConfirmarTelefone={(at) => handleMudarStatus(at.id, 'Confirmado')}
+          />
           <AgendaHojeView
             atendimentos={atendimentos}
             onNovoAtendimento={(sugestao) => {

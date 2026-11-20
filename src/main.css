@@ -297,4 +297,18 @@
   .animate-spotlight {
     animation: spotlight 2s ease forwards;
   }
+
+  @keyframes pulse-border {
+    0%,
+    100% {
+      border-color: #fcd34d;
+    }
+    50% {
+      border-color: #f59e0b;
+    }
+  }
+
+  .animate-pulse-border {
+    animation: pulse-border 1.6s ease-in-out infinite;
+  }
 }

@@ -54,6 +54,8 @@ import {
   Filter,
 } from 'lucide-react'
 import AgendaHojeView from '@/components/agendas/AgendaHojeView'
+import BannerAlertaInterno from '@/components/dashboard/BannerAlertaInterno'
+import { useAlertaInternoConsulta } from '@/hooks/useAlertaInternoConsulta'
 import { StatusAtendimento } from '@/types/crm'
 import { useToast } from '@/hooks/use-toast'
 
@@ -62,6 +64,7 @@ export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const { alertas, dispensar, confirmarPorTelefone } = useAlertaInternoConsulta()
 
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [prospeccoes, setProspeccoes] = useState<Prospeccao[]>([])
@@ -409,6 +412,14 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {/* ALERTA INTERNO SONORO/VISUAL — paciente a 5 min sem chegada */}
+      <BannerAlertaInterno
+        alertas={alertas}
+        onDispensar={dispensar}
+        onConfirmarTelefone={(at) => handleMudarStatusHoje(at.id, 'Confirmado')}
+        onVerAgenda={() => navigate('/agendas')}
+      />
 
       {/* PAINEL HOJE EM PRIMEIRO PLANO COM NOTAS/LEMBRETES LATERAL */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

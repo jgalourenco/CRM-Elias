@@ -33,7 +33,8 @@ export default function WhatsAppSimulada() {
   const fetchData = async () => {
     try {
       const [msgRes, pacRes] = await Promise.all([
-        mensagensService.list(`canal = "WhatsApp"`, 'created'),
+        // Apenas mensagens destinadas a pacientes — internas ficam fora da caixa de entrada
+        mensagensService.list(`canal = "WhatsApp" && interno != true`, 'created'),
         pacientesService.list(1, 100),
       ])
       setMensagens(msgRes)

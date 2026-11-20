@@ -34,7 +34,9 @@ import {
   Link as LinkIcon,
   Copy,
   Check,
+  Bell,
 } from 'lucide-react'
+import FluxosRegua from '@/components/automacao/FluxosRegua'
 import { useAuth } from '@/contexts/AuthContext'
 import { getPermissions } from '@/lib/permissions'
 import { useToast } from '@/hooks/use-toast'
@@ -44,6 +46,21 @@ interface FaseInfo {
   title: string
   badge: string
   desc: string
+}
+
+/** Formata o atraso em minutos como texto legível (dias, horas ou minutos). */
+export function formatarTiming(minutos?: number) {
+  if (!minutos) return 'Imediato'
+  const abs = Math.abs(minutos)
+  if (abs % 1440 === 0) {
+    const dias = abs / 1440
+    return minutos < 0 ? `${dias} dia(s) antes` : `${dias} dia(s) após`
+  }
+  if (abs >= 60 && abs % 60 === 0) {
+    const horas = abs / 60
+    return minutos < 0 ? `${horas}h antes` : `${horas}h após`
+  }
+  return minutos < 0 ? `${abs} min antes` : `${abs} min após`
 }
 
 const FASES_ROADMAP: FaseInfo[] = [
@@ -58,6 +75,30 @@ const FASES_ROADMAP: FaseInfo[] = [
     title: 'Fase 2 — Pós-1ª Consulta',
     badge: 'bg-teal-100 text-teal-800',
     desc: 'Agradecimento e coleta de feedback após a consulta inicial',
+  },
+  {
+    id: 'Primeira_consulta_v1',
+    title: 'Fase 2.1 — Antes da 1ª Consulta',
+    badge: 'bg-sky-100 text-sky-800',
+    desc: 'Confirmação D-4 e D-1 + alerta interno à recepção 5 min antes do horário',
+  },
+  {
+    id: 'Pos_primeira_consulta',
+    title: 'Fase 2.2 — Pós-1ª Consulta',
+    badge: 'bg-lime-100 text-lime-800',
+    desc: 'Pesquisa de satisfação no dia, alerta interno de retorno e exames D+5',
+  },
+  {
+    id: 'Antes_retorno',
+    title: 'Fase 3.1 — Antes do Retorno',
+    badge: 'bg-orange-100 text-orange-800',
+    desc: 'Confirmação D-4 e D-1 + pergunta de presença 5 min antes',
+  },
+  {
+    id: 'Pos_retorno',
+    title: 'Fase 3.2 — Pós-Retorno',
+    badge: 'bg-violet-100 text-violet-800',
+    desc: 'Aviso de manipulado pronto e orientações D+5',
   },
   {
     id: 'Retorno',
@@ -129,8 +170,12 @@ export default function ReguaAtendimento() {
   const [formAtrasoTipo, setFormAtrasoTipo] = useState<'exato' | 'antes' | 'apos'>('exato')
   const [formTemplate, setFormTemplate] = useState('')
   const [formAtivo, setFormAtivo] = useState(true)
+  const [formAtrasoMinutos, setFormAtrasoMinutos] = useState<number>(0)
   const [savingEdit, setSavingEdit] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+
+  // Abas: 'regua' (grade por fases) | 'fluxos' (fluxograma visual)
+  const [abaAtiva, setAbaAtiva] = useState<'regua' | 'fluxos'>('regua')
 
   const preCadastroUrl = `${window.location.origin}/questionario`
 
@@ -183,8 +228,17 @@ export default function ReguaAtendimento() {
       setFormAtrasoTipo('apos')
       setFormAtrasoDias(Math.abs(Math.round(atraso / 1440)))
     }
+    setFormAtrasoMinutos(Math.abs(atraso) % 1440)
 
     setModalEditOpen(true)
+  }
+
+  // Helper: se o atraso cabe em dias inteiros, mantém compatibilidade; caso contrário usa minutos
+  const calcularAtrasoMinutos = () => {
+    if (formAtrasoTipo === 'exato') return 0
+    const sinal = formAtrasoTipo === 'antes' ? -1 : 1
+    const total = Math.abs(formAtrasoDias) * 1440 + Math.abs(formAtrasoMinutos)
+    return total === 0 ? 0 : sinal * total
   }
 
   // Salvar edição persistida no banco
@@ -203,14 +257,7 @@ export default function ReguaAtendimento() {
 
     setSavingEdit(true)
     try {
-      let calcMinutos = 0
-      if (formAtrasoTipo === 'antes') {
-        calcMinutos = -Math.abs(formAtrasoDias) * 1440
-      } else if (formAtrasoTipo === 'apos') {
-        calcMinutos = Math.abs(formAtrasoDias) * 1440
-      } else {
-        calcMinutos = 0
-      }
+      const calcMinutos = calcularAtrasoMinutos()
 
       const updated = await automacoesService.update(editingAut.id, {
         nome: formNome.trim(),
@@ -326,6 +373,32 @@ export default function ReguaAtendimento() {
             Fluxo inteligente de comunicação multicanal (WhatsApp e E-mail simulados) da Clínica
             Elias Mansur.
           </p>
+          <div className="flex items-center gap-1 mt-3">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setAbaAtiva('regua')}
+              className={
+                abaAtiva === 'regua'
+                  ? 'bg-[#166A5A] text-white rounded-xl text-xs font-semibold'
+                  : 'text-[#667C78] hover:text-[#166A5A] hover:bg-[#E2F0EB] rounded-xl text-xs font-semibold'
+              }
+            >
+              Régua
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setAbaAtiva('fluxos')}
+              className={
+                abaAtiva === 'fluxos'
+                  ? 'bg-[#166A5A] text-white rounded-xl text-xs font-semibold'
+                  : 'text-[#667C78] hover:text-[#166A5A] hover:bg-[#E2F0EB] rounded-xl text-xs font-semibold'
+              }
+            >
+              Fluxos
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -362,8 +435,24 @@ export default function ReguaAtendimento() {
         </div>
       </div>
 
-      {/* Grade por 9 Fases */}
-      <div className="space-y-8">
+      {/* Aba Fluxos — fluxograma visual dos 5 fluxos */}
+      {abaAtiva === 'fluxos' && (
+        <FluxosRegua
+          automacoes={automacoes}
+          onSelecionarNo={(aut) => {
+            setAbaAtiva('regua')
+            setTimeout(() => {
+              const el = document.getElementById(`aut-card-${aut.id}`)
+              el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              el?.classList.add('ring-2', 'ring-[#166A5A]')
+              setTimeout(() => el?.classList.remove('ring-2', 'ring-[#166A5A]'), 2500)
+            }, 100)
+          }}
+        />
+      )}
+
+      {/* Grade por Fases (aba Régua) */}
+      <div className={abaAtiva === 'regua' ? 'space-y-8' : 'hidden'}>
         {FASES_ROADMAP.map((fase) => {
           const automacoesDaFase = automacoes.filter((a) => a.fase_roadmap === fase.id)
           if (automacoesDaFase.length === 0) return null
@@ -390,6 +479,7 @@ export default function ReguaAtendimento() {
                   return (
                     <Card
                       key={aut.id}
+                      id={`aut-card-${aut.id}`}
                       className={`rounded-2xl border bg-white shadow-xs hover:shadow-md transition-all flex flex-col justify-between ${
                         aut.ativo !== false ? 'border-[#E3E7E5]' : 'border-gray-200 opacity-60'
                       }`}
@@ -400,20 +490,28 @@ export default function ReguaAtendimento() {
                             <CardTitle className="text-sm font-bold text-[#1C2B29] leading-snug">
                               {aut.nome}
                             </CardTitle>
-                            <Badge
-                              className={`text-[10px] gap-1 ${
-                                isWA
-                                  ? 'bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/30'
-                                  : 'bg-[#2E7FA3]/10 text-[#2E7FA3] border border-[#2E7FA3]/30'
-                              }`}
-                            >
-                              {isWA ? (
-                                <MessageCircle className="h-3 w-3" />
-                              ) : (
-                                <Mail className="h-3 w-3" />
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge
+                                className={`text-[10px] gap-1 ${
+                                  isWA
+                                    ? 'bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/30'
+                                    : 'bg-[#2E7FA3]/10 text-[#2E7FA3] border border-[#2E7FA3]/30'
+                                }`}
+                              >
+                                {isWA ? (
+                                  <MessageCircle className="h-3 w-3" />
+                                ) : (
+                                  <Mail className="h-3 w-3" />
+                                )}
+                                {aut.canal}
+                              </Badge>
+                              {aut.interno && (
+                                <Badge className="text-[10px] gap-1 bg-[#C9A227]/15 text-[#A5831D] border border-[#C9A227]/30">
+                                  <Bell className="h-3 w-3" />
+                                  Interno
+                                </Badge>
                               )}
-                              {aut.canal}
-                            </Badge>
+                            </div>
                           </div>
 
                           {/* Toggle Ativo */}
@@ -443,12 +541,7 @@ export default function ReguaAtendimento() {
                           </p>
                           <p className="text-[#667C78] flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            <strong>Timing:</strong>{' '}
-                            {aut.atraso_minutos === 0
-                              ? 'Imediato'
-                              : aut.atraso_minutos! < 0
-                                ? `${Math.abs(aut.atraso_minutos! / 1440)} dia(s) antes`
-                                : `${aut.atraso_minutos! / 1440} dia(s) após`}
+                            <strong>Timing:</strong> {formatarTiming(aut.atraso_minutos)}
                           </p>
                         </div>
 
@@ -565,8 +658,12 @@ export default function ReguaAtendimento() {
                   value={formAtrasoTipo}
                   onValueChange={(v: 'exato' | 'antes' | 'apos') => {
                     setFormAtrasoTipo(v)
-                    if (v === 'exato') setFormAtrasoDias(0)
-                    else if (formAtrasoDias === 0) setFormAtrasoDias(1)
+                    if (v === 'exato') {
+                      setFormAtrasoDias(0)
+                      setFormAtrasoMinutos(0)
+                    } else if (formAtrasoDias === 0 && formAtrasoMinutos === 0) {
+                      setFormAtrasoDias(1)
+                    }
                   }}
                 >
                   <SelectTrigger className="rounded-xl border-[#E3E7E5]">
@@ -574,22 +671,37 @@ export default function ReguaAtendimento() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="exato">Imediato no gatilho</SelectItem>
-                    <SelectItem value="antes">Dias antes do evento</SelectItem>
-                    <SelectItem value="apos">Dias após o evento</SelectItem>
+                    <SelectItem value="antes">Antes do evento</SelectItem>
+                    <SelectItem value="apos">Após o evento</SelectItem>
                   </SelectContent>
                 </Select>
 
-                <Input
-                  type="number"
-                  min="0"
-                  max="365"
-                  disabled={formAtrasoTipo === 'exato'}
-                  value={formAtrasoDias}
-                  onChange={(e) => setFormAtrasoDias(Number(e.target.value) || 0)}
-                  placeholder="Qtd dias"
-                  className="rounded-xl border-[#E3E7E5]"
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="365"
+                    disabled={formAtrasoTipo === 'exato'}
+                    value={formAtrasoDias}
+                    onChange={(e) => setFormAtrasoDias(Number(e.target.value) || 0)}
+                    placeholder="Dias"
+                    className="rounded-xl border-[#E3E7E5]"
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    max="59"
+                    disabled={formAtrasoTipo === 'exato'}
+                    value={formAtrasoMinutos}
+                    onChange={(e) => setFormAtrasoMinutos(Number(e.target.value) || 0)}
+                    placeholder="Minutos"
+                    className="rounded-xl border-[#E3E7E5]"
+                  />
+                </div>
               </div>
+              <p className="text-[10px] text-[#667C78]">
+                Dias + minutos (ex.: 0 dias e 5 minutos antes = alerta 5 min antes do horário).
+              </p>
             </div>
 
             {/* Mensagem / Template */}
