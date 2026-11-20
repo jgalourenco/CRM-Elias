@@ -213,6 +213,8 @@ export interface Mensagem {
   conteudo: string
   status: StatusMensagem
   lida: boolean
+  /** Mensagem interna da equipe — não aparece nas caixas de entrada (WhatsApp/E-mail) */
+  interno?: boolean
   agendada_para?: string
   created: string
   updated: string

@@ -293,6 +293,7 @@ export async function dispatchAutomacao(
       conteudo: conteudo,
       status: 'enviada',
       lida: false,
+      interno: automacao?.interno === true,
       agendada_para: new Date().toISOString(),
     })
   } catch (err) {

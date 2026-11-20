@@ -333,7 +333,7 @@ describe('2FA / MFA Core Security & Cryptographic Tests', () => {
   })
 
   it('5. Validação de formato da URI otpauth:// RFC 6238', () => {
-    const issuer = 'Seleta CRM'
+    const issuer = 'Clínica Elias Mansur CRM'
     const account = 'jgalourenco@hotmail.com'
     const secret = 'JBSWY3DPEHPK3PXP'
     const uri = `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(account)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`

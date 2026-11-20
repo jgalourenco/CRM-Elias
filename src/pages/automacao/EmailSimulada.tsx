@@ -19,7 +19,7 @@ export default function EmailSimulada() {
   const fetchData = async () => {
     try {
       const [msgRes, pacRes] = await Promise.all([
-        mensagensService.list(`canal = "Email"`, '-created'),
+        mensagensService.list(`canal = "Email" && interno != true`, '-created'),
         pacientesService.list(1, 100),
       ])
       setMensagens(msgRes)
