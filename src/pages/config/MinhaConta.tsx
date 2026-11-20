@@ -121,7 +121,7 @@ export default function MinhaConta() {
           canal: 'Email',
           direcao: 'saida',
           template: 'Confirmação de Alteração de E-mail (Simulado)',
-          conteudo: `Olá ${user?.name}! Recebemos seu pedido para trocar o endereço de e-mail de ${user?.email} para ${novoEmail}. Clique para confirmar: https://crm-seleta.goskip.app/verificar-email?token=simulado_email_change`,
+          conteudo: `Olá ${user?.name}! Recebemos seu pedido para trocar o endereço de e-mail de ${user?.email} para ${novoEmail}. Clique para confirmar: ${window.location.origin}/verificar-email?token=simulado_email_change`,
           status: 'enviada',
           lida: false,
         })

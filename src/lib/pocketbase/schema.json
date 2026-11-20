@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-10T12:56:36.877Z",
+  "generatedAt": "2026-11-20T17:29:03.252Z",
   "collections": [
     {
       "name": "users",
@@ -892,7 +892,11 @@
             "D1",
             "NF",
             "No_show",
-            "LTV"
+            "LTV",
+            "Primeira_consulta_v1",
+            "Pos_primeira_consulta",
+            "Antes_retorno",
+            "Pos_retorno"
           ]
         },
         {
@@ -947,6 +951,12 @@
             "onCreate",
             "onUpdate"
           ]
+        },
+        {
+          "name": "interno",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []

@@ -41,7 +41,7 @@ export default function EsqueciSenha() {
             canal: 'Email',
             direcao: 'saida',
             template: 'Redefinição de Senha (Simulado)',
-            conteudo: `Olá! Recebemos sua solicitação de redefinição de senha para o e-mail ${email}. Acesse o link para definir sua nova credencial: https://crm-seleta.goskip.app/redefinir-senha?token=simulado_reset_token`,
+            conteudo: `Olá! Recebemos sua solicitação de redefinição de senha para o e-mail ${email}. Acesse o link para definir sua nova credencial: ${window.location.origin}/redefinir-senha?token=simulado_reset_token`,
             status: 'enviada',
             lida: false,
           })

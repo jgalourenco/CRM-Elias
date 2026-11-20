@@ -54,7 +54,11 @@ export type EtapaProspeccao =
 export type FaseRoadmapAutomacao =
   | 'Prospeccao'
   | 'Primeira_consulta'
+  | 'Primeira_consulta_v1'
+  | 'Pos_primeira_consulta'
   | 'Retorno'
+  | 'Antes_retorno'
+  | 'Pos_retorno'
   | 'Manipulado'
   | 'Aplicacao_APP'
   | 'Aplicacao_APP_AV'
@@ -226,6 +230,8 @@ export interface Automacao {
   gatilho: string
   atraso_minutos?: number
   ativo?: boolean
+  /** Mensagem interna para a equipe — não aparece nas caixas de entrada do paciente */
+  interno?: boolean
   created: string
   updated: string
 }
